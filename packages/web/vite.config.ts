@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(import.meta.dirname!, './src'),
+      '@app/api/schemas': resolve(import.meta.dirname!, '../api/src/schemas/index.ts'),
     },
   },
   server: {
