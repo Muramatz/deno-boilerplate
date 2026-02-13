@@ -9,7 +9,7 @@
 
 1. [技術スタック一覧](#1-技術スタック一覧)
 2. [モノレポ基盤セットアップ](#2-モノレポ基盤セットアップ)
-3. [packages/shared のセットアップ](#3-packagesshared-のセットアップ)
+3. [API-First スキーマ共有アーキテクチャ](#3-api-first-スキーマ共有アーキテクチャ)
 4. [packages/api のセットアップ](#4-packagesapi-のセットアップ)
 5. [packages/web のセットアップ](#5-packagesweb-のセットアップ)
 6. [Lint / Format 設定](#6-lint--format-設定)
@@ -22,32 +22,32 @@
 
 ## 1. 技術スタック一覧
 
-| カテゴリ                      | 技術                                  | バージョン    | 用途                                                                                                                        |
-| ----------------------------- | ------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **言語**                      | TypeScript                            | Deno組み込み  | 全パッケージ共通、strict mode                                                                                               |
-| **ランタイム/パッケージ管理** | Deno                                  | >=2.x         | ランタイム + ワークスペース + パッケージ管理                                                                                |
-| **フロントエンド**            | React                                 | ^19.2         | UI ライブラリ                                                                                                               |
-| **ビルド**                    | Vite                                  | ^7.3          | フロントエンドバンドラー + 開発サーバー                                                                                     |
-| **CSS**                       | Tailwind CSS                          | ^4.1          | ユーティリティファーストCSS（Viteプラグイン統合）                                                                           |
-| **状態管理**                  | Zustand                               | ^5.0          | クライアント側UI状態                                                                                                        |
-| **サーバー状態**              | TanStack Query                        | ^5.90         | サーバーデータのキャッシュ・同期                                                                                            |
-| **フォーム**                  | react-hook-form + @hookform/resolvers | ^7.71 / ^3.10 | フォームバリデーション（Zodと統合）                                                                                         |
-| **ルーティング**              | react-router-dom                      | ^7.13         | SPA ルーティング                                                                                                            |
-| **バックエンド**              | Hono                                  | ^4.11         | 軽量 Web フレームワーク                                                                                                     |
-| **OpenAPI**                   | @hono/zod-openapi                     | ^1.2          | Zodスキーマから自動ドキュメント生成                                                                                         |
-| **ORM**                       | Drizzle ORM                           | ^0.45         | 型安全なDB操作                                                                                                              |
-| **DBドライバ**                | postgres (postgres.js)                | ^3.4          | PostgreSQL接続                                                                                                              |
-| **バリデーション**            | Zod                                   | ^4.0          | フロント・バック共有スキーマ（※@hono/zod-openapi v1.xはZod v4必須。v4では`.partial()`でも`.default()`が保持される点に注意） |
-| **ロギング**                  | @logtape/logtape                      | ^0.10         | 構造化ログ（マルチランタイム対応）                                                                                          |
-| **Lint/Format**               | deno lint / deno fmt                  | Deno組み込み  | Linter + Formatter                                                                                                          |
-| **テスト**                    | deno test + @std/testing              | Deno組み込み  | ユニット・統合テスト                                                                                                        |
-| **テストDB**                  | PGLite (@electric-sql/pglite)         | ^0.3          | インメモリPostgreSQL（WASM）                                                                                                |
-| **UIテスト**                  | @testing-library/react                | ^16.3         | Reactコンポーネントテスト                                                                                                   |
-| **モック**                    | MSW (Mock Service Worker)             | ^2.12         | API モック（フロントエンドテスト用）                                                                                        |
-| **日付**                      | date-fns                              | ^4.1          | バックエンド日付操作                                                                                                        |
-| **日付(FE)**                  | dayjs                                 | ^1.11         | フロントエンド日付操作                                                                                                      |
-| **クラス結合**                | clsx                                  | ^2.1          | className の条件結合                                                                                                        |
-| **環境変数**                  | @std/dotenv                           | Deno標準      | .envファイル読み込み                                                                                                        |
+| カテゴリ                      | 技術                                  | バージョン   | 用途                                                                                                                        |
+| ----------------------------- | ------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| **言語**                      | TypeScript                            | Deno組み込み | 全パッケージ共通、strict mode                                                                                               |
+| **ランタイム/パッケージ管理** | Deno                                  | >=2.x        | ランタイム + ワークスペース + パッケージ管理                                                                                |
+| **フロントエンド**            | React                                 | ^19.2        | UI ライブラリ                                                                                                               |
+| **ビルド**                    | Vite                                  | ^7.3         | フロントエンドバンドラー + 開発サーバー                                                                                     |
+| **CSS**                       | Tailwind CSS                          | ^4.1         | ユーティリティファーストCSS（Viteプラグイン統合）                                                                           |
+| **状態管理**                  | Zustand                               | ^5.0         | クライアント側UI状態                                                                                                        |
+| **サーバー状態**              | TanStack Query                        | ^5.90        | サーバーデータのキャッシュ・同期                                                                                            |
+| **フォーム**                  | react-hook-form + @hookform/resolvers | ^7.71 / ^5.2 | フォームバリデーション（Zodと統合）                                                                                         |
+| **ルーティング**              | react-router-dom                      | ^7.13        | SPA ルーティング                                                                                                            |
+| **バックエンド**              | Hono                                  | ^4.11        | 軽量 Web フレームワーク                                                                                                     |
+| **OpenAPI**                   | @hono/zod-openapi                     | ^1.2         | Zodスキーマから自動ドキュメント生成                                                                                         |
+| **ORM**                       | Drizzle ORM                           | ^0.45        | 型安全なDB操作                                                                                                              |
+| **DBドライバ**                | postgres (postgres.js)                | ^3.4         | PostgreSQL接続                                                                                                              |
+| **バリデーション**            | Zod                                   | ^4.0         | フロント・バック共有スキーマ（※@hono/zod-openapi v1.xはZod v4必須。v4では`.partial()`でも`.default()`が保持される点に注意） |
+| **ロギング**                  | @logtape/logtape                      | ^0.10        | 構造化ログ（マルチランタイム対応）                                                                                          |
+| **Lint/Format**               | deno lint / deno fmt                  | Deno組み込み | Linter + Formatter                                                                                                          |
+| **テスト**                    | deno test + @std/testing              | Deno組み込み | ユニット・統合テスト                                                                                                        |
+| **テストDB**                  | PGLite (@electric-sql/pglite)         | ^0.3         | インメモリPostgreSQL（WASM）                                                                                                |
+| **UIテスト**                  | @testing-library/react                | ^16.3        | Reactコンポーネントテスト                                                                                                   |
+| **モック**                    | MSW (Mock Service Worker)             | ^2.12        | API モック（フロントエンドテスト用）                                                                                        |
+| **日付**                      | date-fns                              | ^4.1         | バックエンド日付操作                                                                                                        |
+| **日付(FE)**                  | dayjs                                 | ^1.11        | フロントエンド日付操作                                                                                                      |
+| **クラス結合**                | clsx                                  | ^2.1         | className の条件結合                                                                                                        |
+| **環境変数**                  | @std/dotenv                           | Deno標準     | .envファイル読み込み                                                                                                        |
 
 ### pnpm/Node.js版から削除された依存
 
@@ -79,8 +79,7 @@ project-root/
 │   └── settings.json         # Deno拡張有効化
 ├── docs/                     # ドキュメント
 └── packages/
-    ├── shared/               # 共有スキーマ・型・定数
-    ├── api/                  # バックエンド（Hono on Deno）
+    ├── api/                  # バックエンド（Hono on Deno）— スキーマのSingle Source of Truth
     └── web/                  # フロントエンド（React + Vite on Deno）
 ```
 
@@ -89,17 +88,19 @@ project-root/
 ```json
 {
   "nodeModulesDir": "auto",
-  "workspace": ["./packages/shared", "./packages/api", "./packages/web"],
+  "workspace": ["./packages/api", "./packages/web"],
   "imports": {
-    "zod": "npm:zod@^3.24",
+    "zod": "npm:zod@^4.0",
     "@std/assert": "jsr:@std/assert@^1",
     "@std/testing": "jsr:@std/testing@^1",
     "@std/expect": "jsr:@std/expect@^1",
     "@std/dotenv": "jsr:@std/dotenv@^0.225"
   },
   "tasks": {
-    "dev": "deno task --recursive dev",
-    "test": "deno test --recursive",
+    "dev:api": "deno task --filter '@app/api' dev",
+    "dev:web": "deno task --filter '@app/web' dev",
+    "dev": "deno task dev:api & deno task dev:web",
+    "test": "deno task --filter '@app/api' test",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
@@ -123,7 +124,7 @@ project-root/
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true
   },
-  "exclude": ["node_modules", "dist", "build"]
+  "exclude": ["node_modules", "dist", "build", ".claude"]
 }
 ```
 
@@ -131,8 +132,9 @@ project-root/
 
 - pnpm版の4ファイル（`package.json`, `pnpm-workspace.yaml`, `tsconfig.json`, `biome.json`）が
   **`deno.json` 1つに統合**
-- `workspace` でモノレポメンバーを定義
-- ルートの `imports` は全ワークスペースメンバーに継承される
+- `workspace` でモノレポメンバーを定義（`shared` パッケージは廃止、API-First 設計を採用）
+- ルートの `imports` は全ワークスペースメンバーに継承される。**Zod v4
+  を使用**（`@hono/zod-openapi@1.x` が Zod v4 を peerDep として要求）
 - `fmt` 設定はBiome版と同じルール（シングルクォート、セミコロンあり、インデント2、行幅100）
 - **重要:** `deno task --recursive` / `deno task -r`
   はルート自身のタスクも実行するため、ルートに同名タスクがあると無限ループになる。`--filter`
@@ -142,6 +144,7 @@ project-root/
   で各メンバーのテストタスクを個別実行すること
 - **重要:** `nodeModulesDir` はワークスペースルートでのみ指定可能（メンバーの deno.json
   では無視される）。Vite/Tailwind のために `"nodeModulesDir": "auto"` をルートに配置
+- **重要:** `.claude` ディレクトリを `exclude` に追加して `deno fmt` / `deno lint` の対象外にする
 
 ### 2.3 .vscode/settings.json
 
@@ -255,109 +258,161 @@ DENO_ENV=development
 
 ---
 
-## 3. packages/shared のセットアップ
+## 3. API-First スキーマ共有アーキテクチャ
 
-### 3.1 役割
+### 3.1 設計思想
 
-フロントエンドとバックエンドで共有する **Zod スキーマ**・**型定義**・**定数** を一元管理する。
+従来の `packages/shared` パッケージは廃止し、**API が Zod スキーマの Single Source of Truth** となる
+API-First 設計を採用する。各 feature 内に pure Zod スキーマ（`schema.ts`）を配置し、
+`@<scope>/api/schemas` サブパスエクスポート経由で Web が消費する。
 
-### 3.2 deno.json
+```
+[API — Single Source of Truth]
+features/<name>/
+  table.ts      → Drizzle テーブル定義（DB層）
+  schema.ts     → Pure Zod スキーマ（共有バリデーション）  ← Web が import
+  constants.ts  → ドメイン定数（as const + 型導出）        ← Web が import
+  openapi.ts    → OpenAPI メタデータ付き Zod スキーマ（API ドキュメント用）
+
+[Web — 消費側]
+import { createExampleSchema } from '@<scope>/api/schemas';
+→ react-hook-form + zodResolver でフォームバリデーション
+```
+
+### 3.2 shared パッケージを廃止した理由
+
+| 観点                       | shared パッケージ                              | API-First                                      |
+| -------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| **スキーマ定義場所**       | shared に定義 → API, Web 両方が import         | API feature 内に定義 → Web がサブパスで import |
+| **同期コスト**             | shared 変更時に API, Web 両方の整合性を確認    | API が唯一の定義元、Web は常に最新を参照       |
+| **依存方向**               | shared ← API, shared ← Web（双方向依存リスク） | API → Web（一方向のみ）                        |
+| **feature コロケーション** | スキーマが feature から分離                    | スキーマが feature 内に同居                    |
+
+### 3.3 スキーマ共有の仕組み
+
+**API 側: サブパスエクスポート**
+
+`packages/api/deno.json`:
 
 ```json
-{
-  "name": "@<scope>/shared",
-  "version": "0.0.0",
-  "exports": "./src/index.ts",
-  "tasks": {
-    "check": "deno check src/**/*.ts"
-  }
+"exports": {
+  ".": "./src/index.ts",
+  "./schemas": "./src/schemas/index.ts"
 }
 ```
 
-**ポイント:**
+`packages/api/src/schemas/index.ts`:
 
-- 依存は **ルートの imports から Zod を継承**（ここでの宣言不要）
-- `exports` がシンプル（`types` / `default` の分岐不要、DenoはTSを直接解決）
-- TypeScript自体が不要（Deno組み込み）
-- 消費側は `import { ... } from '@<scope>/shared'` で利用
+```typescript
+// Zodスキーマ & 型
+export {
+  baseExampleSchema,
+  createExampleSchema,
+  exampleSchema,
+  updateExampleSchema,
+} from '../features/example/schema.ts';
+export type { CreateExample, Example, UpdateExample } from '../features/example/schema.ts';
 
-### 3.3 ディレクトリ構造
-
-```
-packages/shared/src/
-├── index.ts                  # バレルエクスポート（公開API）
-├── constants/
-│   ├── index.ts              # 定数の再エクスポート
-│   └── <domain>.ts           # ドメイン定数（as const + 型導出）
-├── schemas/
-│   ├── index.ts              # スキーマの再エクスポート
-│   ├── <entity>.ts           # エンティティごとのZodスキーマ
-│   └── __tests__/
-│       └── <entity>.test.ts  # deno test で実行
-└── types/
-    └── index.ts              # 型の再エクスポート（schemas/constantsから導出）
+// 定数
+export { EXAMPLE_STATUS_IDS, EXAMPLE_STATUSES } from '../features/example/constants.ts';
+export type { ExampleStatusId } from '../features/example/constants.ts';
 ```
 
-### 3.4 コードパターン
+Web 側での import:
+
+```typescript
+import { createExampleSchema } from '@<scope>/api/schemas';
+```
+
+**重要:** Vite は Deno ワークスペースのサブパスエクスポートを解決できないため、 `vite.config.ts`
+に明示的な `resolve.alias` が必要（詳細はセクション 5.2 参照）。
+
+### 3.4 Feature 内のファイル構成（3層 + 共有スキーマ）
+
+各 feature は以下のファイルで構成される:
+
+```
+features/<name>/
+├── table.ts       # Drizzle テーブル定義（snake_case → camelCase 型推論）
+├── schema.ts      # Pure Zod バリデーションスキーマ（Web 共有用）
+├── constants.ts   # ドメイン定数（as const + 型導出）
+├── openapi.ts     # OpenAPI メタデータ付き Zod スキーマ（API ドキュメント用）
+├── repository.ts  # データアクセス層（Drizzle CRUD）
+├── service.ts     # ビジネスロジック層
+├── routes.ts      # HTTP ルートハンドラ（OpenAPIHono）
+├── index.ts       # 公開 API（routes + table のみ）
+└── __tests__/
+```
+
+**openapi.ts と schema.ts の関係:**
+
+- `schema.ts` は純粋な `zod` で定義（Web 向けエクスポート用）
+- `openapi.ts` は `@hono/zod-openapi` の `z` で定義（description, example 等の OpenAPI
+  メタデータ付き）
+- 両者は同じフィールド構造を持つが、用途が異なる
+- TypeScript がスキーマの乖離を検出する仕組み:
+
+```text
+routes.ts: c.req.valid('json')         → openapi.ts の型
+routes.ts: ExampleService.create(data) → schema.ts の CreateExample 型
+→ 型が一致しなければコンパイルエラー
+```
+
+### 3.5 コードパターン
+
+#### Zod スキーマパターン（ベース → 拡張 → 部分更新）— Zod v4
+
+```typescript
+// features/<name>/schema.ts
+import { z } from 'zod';
+
+// ベーススキーマ
+export const baseExampleSchema = z.object({
+  field1: z.boolean().default(false),
+  field2: z.string().min(1),
+});
+
+// 作成スキーマ（ベース + 追加フィールド）
+export const createExampleSchema = baseExampleSchema.extend({
+  date: z.iso.date(), // Zod v4: z.string().date() → z.iso.date()
+});
+export type CreateExample = z.infer<typeof createExampleSchema>;
+
+// 更新スキーマ（部分更新）
+// Zod v4: .partial() は .default() の値を保持する（v3 との breaking change）
+export const updateExampleSchema = baseExampleSchema.partial();
+export type UpdateExample = z.infer<typeof updateExampleSchema>;
+
+// レスポンススキーマ（メタデータ付き）
+export const exampleSchema = baseExampleSchema.extend({
+  id: z.uuid(),
+  date: z.iso.date(),
+  createdAt: z.iso.datetime(), // Zod v4: z.string().datetime() → z.iso.datetime()
+  updatedAt: z.iso.datetime(),
+});
+export type Example = z.infer<typeof exampleSchema>;
+```
+
+Zod v4 の注意点:
+
+- `z.string().date()` → `z.iso.date()` に変更
+- `z.string().datetime()` → `z.iso.datetime()` に変更
+- `.partial()` が `.default()` の値を保持する（v3 では `.default()` が消えていた）
+- react-hook-form には `z.input<typeof schema>` を使用（input 型は `.default()` 付きフィールドが
+  optional になる）、出力型は `z.infer<typeof schema>`
 
 #### 定数定義パターン（`as const` + 型導出）
 
 ```typescript
-// constants/example.ts
-export const ITEMS = [
-  { id: 'item1', name: 'アイテム1', order: 1 },
-  { id: 'item2', name: 'アイテム2', order: 2 },
+// features/<name>/constants.ts
+export const EXAMPLE_STATUSES = [
+  { id: 'active', label: '有効', order: 1 },
+  { id: 'inactive', label: '無効', order: 2 },
+  { id: 'archived', label: 'アーカイブ', order: 3 },
 ] as const;
 
-export type ItemId = (typeof ITEMS)[number]['id'];
-export const ITEM_IDS = ITEMS.map((i) => i.id);
-```
-
-#### Zodスキーマパターン（ベース → 拡張 → 部分更新）
-
-```typescript
-// schemas/example.ts
-import { z } from 'zod';
-
-// ベーススキーマ
-export const baseItemSchema = z.object({
-  field1: z.boolean().default(false),
-  field2: z.string(),
-});
-
-// 作成スキーマ（ベース + 追加フィールド）
-export const createItemSchema = baseItemSchema.extend({
-  date: z.string().date(), // YYYY-MM-DD 文字列をバリデーション
-});
-export type CreateItem = z.infer<typeof createItemSchema>;
-
-// 更新スキーマ（部分更新）
-export const updateItemSchema = baseItemSchema.partial();
-export type UpdateItem = z.infer<typeof updateItemSchema>;
-
-// レスポンススキーマ（メタデータ付き）
-export const itemSchema = baseItemSchema.extend({
-  id: z.uuid(),
-  date: z.string().date(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-});
-export type Item = z.infer<typeof itemSchema>;
-```
-
-#### バレルエクスポートパターン
-
-```typescript
-// index.ts
-export * from './constants/index.ts';
-export * from './schemas/index.ts';
-export * from './types/index.ts';
-```
-
-```typescript
-// types/index.ts — スキーマ・定数から導出した型を再エクスポート
-export type { ItemId } from '../constants/index.ts';
-export type { CreateItem, Item, UpdateItem } from '../schemas/index.ts';
+export type ExampleStatusId = (typeof EXAMPLE_STATUSES)[number]['id'];
+export const EXAMPLE_STATUS_IDS = EXAMPLE_STATUSES.map((s) => s.id);
 ```
 
 **注意:** Denoではインポートパスに `.ts` 拡張子が必須。
@@ -372,23 +427,26 @@ export type { CreateItem, Item, UpdateItem } from '../schemas/index.ts';
 {
   "name": "@<scope>/api",
   "version": "0.0.0",
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas": "./src/schemas/index.ts"
+  },
   "imports": {
-    "@hono/zod-openapi": "npm:@hono/zod-openapi@^1.2.1",
-    "@hono/swagger-ui": "npm:@hono/swagger-ui@^0.5.3",
-    "hono": "npm:hono@^4.11.6",
-    "drizzle-orm": "npm:drizzle-orm@^0.45.1",
-    "drizzle-orm/": "npm:/drizzle-orm@^0.45.1/",
-    "postgres": "npm:postgres@^3.4.8",
-    "date-fns": "npm:date-fns@^4.1.0",
+    "@hono/zod-openapi": "npm:@hono/zod-openapi@^1.2",
+    "@hono/swagger-ui": "npm:@hono/swagger-ui@^0.5",
+    "hono": "npm:hono@^4.11",
+    "drizzle-orm": "npm:drizzle-orm@^0.45",
+    "drizzle-orm/": "npm:/drizzle-orm@^0.45/",
+    "postgres": "npm:postgres@^3.4",
+    "date-fns": "npm:date-fns@^4.1",
     "@logtape/logtape": "jsr:@logtape/logtape@^0.10",
-    "@electric-sql/pglite": "npm:@electric-sql/pglite@^0.3.15",
-    "drizzle-kit": "npm:drizzle-kit@^0.31.8",
-    "drizzle-kit/api": "npm:drizzle-kit@^0.31.8/api",
+    "@electric-sql/pglite": "npm:@electric-sql/pglite@^0.3",
+    "drizzle-kit": "npm:drizzle-kit@^0.31",
+    "drizzle-kit/api": "npm:drizzle-kit@^0.31/api",
     "@/": "./src/"
   },
   "tasks": {
-    "dev": "deno run --watch --allow-net --allow-env --allow-read main.ts",
+    "dev": "deno run --watch --allow-net --allow-env --allow-read src/index.ts",
     "check": "deno check src/**/*.ts",
     "test": "deno test --allow-net --allow-env --allow-read --allow-write --allow-sys --allow-ffi src/",
     "db:generate": "deno run -A npm:drizzle-kit generate",
@@ -403,6 +461,7 @@ export type { CreateItem, Item, UpdateItem } from '../schemas/index.ts';
 
 **ポイント:**
 
+- `exports` にサブパスを定義: `"./schemas"` で Web から Zod スキーマを import 可能にする
 - `tsx watch` → `deno run --watch`（ネイティブTS実行 + ホットリロード）
 - `tsc && tsc-alias` ビルド → **不要**（Denoは.tsを直接実行）
 - `@/` パスエイリアスは `imports` で解決（tsc-alias不要）
@@ -422,29 +481,33 @@ packages/api/src/
 ├── app.ts                            # Honoアプリ定義・ルート集約・ミドルウェアチェーン
 ├── db/
 │   ├── index.ts                      # Drizzle DB接続 + setDb()（テスト用DI）
-│   └── schema.ts                     # 全featureスキーマの集約再エクスポート
+│   └── tables.ts                     # 全featureテーブルの集約再エクスポート
+├── schemas/
+│   └── index.ts                      # Web向けZodスキーマ・定数の集約再エクスポート
 ├── features/
 │   └── <feature-name>/
-│       ├── index.ts                  # 公開API（routesとschemaのみ公開）
-│       ├── schema.ts                 # Drizzleテーブル定義
-│       ├── repository.ts            # データアクセス層
-│       ├── service.ts               # ビジネスロジック層
-│       ├── routes.ts                # Honoルートハンドラ
-│       ├── openapi.ts       # OpenAPI用Zodスキーマ
+│       ├── index.ts                  # 公開API（routesとtableのみ公開）
+│       ├── table.ts                  # Drizzleテーブル定義
+│       ├── schema.ts                 # Pure Zodバリデーションスキーマ（Web共有用）
+│       ├── constants.ts              # ドメイン定数（as const + 型導出）
+│       ├── openapi.ts                # OpenAPIメタデータ付きZodスキーマ
+│       ├── repository.ts             # データアクセス層
+│       ├── service.ts                # ビジネスロジック層
+│       ├── routes.ts                 # Honoルートハンドラ
 │       └── __tests__/
-│           ├── routes.test.ts       # 統合テスト
-│           ├── service.test.ts      # ビジネスロジックテスト
-│           └── repository.test.ts   # データ層テスト
+│           ├── routes.test.ts        # 統合テスト
+│           ├── service.test.ts       # ビジネスロジックテスト
+│           └── repository.test.ts    # データ層テスト
 ├── lib/
-│   ├── errors.ts                    # カスタムエラークラス
+│   ├── errors.ts                     # カスタムエラークラス
 │   └── __tests__/
 │       └── errors.test.ts
 ├── middleware/
-│   ├── index.ts                     # ミドルウェア再エクスポート
-│   ├── error-handler.ts             # グローバルエラーハンドラ
-│   └── logger.ts                    # LogTapeロギングミドルウェア
+│   ├── index.ts                      # ミドルウェア再エクスポート
+│   ├── error-handler.ts              # グローバルエラーハンドラ
+│   └── logger.ts                     # LogTapeロギングミドルウェア
 └── test/
-    └── setup.ts                     # テストセットアップ（PGLite + @std/testing）
+    └── setup.ts                      # テストセットアップ（PGLite + @std/testing）
 ```
 
 ### 4.3 エントリーポイント（src/index.ts）
@@ -637,7 +700,7 @@ export class ValidationError extends AppError {
 ```typescript
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from './schema.ts';
+import * as schema from './tables.ts';
 
 const connectionString = Deno.env.get('DATABASE_URL') ||
   'postgresql://postgres:postgres@localhost:5432/<db_name>';
@@ -659,13 +722,13 @@ export function setDb(newDb: Database) {
 - テスト時は PGLite インスタンスを `setDb()` で注入し、本番コードを一切変更せずにテスト可能
 - `vi.mock` のようなモジュールモックが不要なシンプルな依存注入パターン
 
-### 4.8 DBスキーマ集約（src/db/schema.ts）
+### 4.8 DBテーブル集約（src/db/tables.ts）
 
 ```typescript
-// 各featureのschema.tsをここで集約再エクスポート
+// 各featureのtable.tsをここで集約再エクスポート
 // NOTE: drizzle-kit はNode.jsで実行されるため @/ エイリアスを解決できない。相対パスを使用。
-export { examples } from '../features/example/schema.ts';
-// export { users } from '../features/user/schema.ts';
+export { examples } from '../features/example/table.ts';
+// export { users } from '../features/user/table.ts';
 ```
 
 ### 4.9 Drizzle設定（drizzle.config.ts）
@@ -674,7 +737,7 @@ export { examples } from '../features/example/schema.ts';
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-  schema: './src/db/schema.ts',
+  schema: './src/db/tables.ts',
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
@@ -685,15 +748,19 @@ export default defineConfig({
 
 ### 4.10 Feature レイヤーパターン（各ファイルの責務）
 
-```
-routes.ts → service.ts → repository.ts → schema.ts (DB)
+```text
+routes.ts → service.ts → repository.ts → table.ts (DB)
      ↓           ↓              ↓
   HTTP入出力   ビジネスロジック   データ操作
-  Zod検証     エラー判定        Drizzle SQL
+  OpenAPI検証  エラー判定        Drizzle SQL
               集計・変換         CRUD
+
+openapi.ts ← routes.ts が参照（リクエスト/レスポンスのOpenAPIスキーマ）
+schema.ts  ← service.ts が参照（Pure Zodバリデーション型）
+           ← Web が @<scope>/api/schemas 経由で参照
 ```
 
-#### schema.ts — Drizzle テーブル定義
+#### table.ts — Drizzle テーブル定義
 
 ```typescript
 import { boolean, date, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
@@ -720,7 +787,7 @@ export type NewExampleRecord = typeof examples.$inferInsert;
 ```typescript
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/index.ts';
-import { type ExampleRecord, examples, type NewExampleRecord } from './schema.ts';
+import { type ExampleRecord, examples, type NewExampleRecord } from './table.ts';
 
 export const ExampleRepository = {
   async create(data: NewExampleRecord): Promise<ExampleRecord> {
@@ -742,7 +809,10 @@ export const ExampleRepository = {
     return record ?? null;
   },
 
-  async update(id: string, data: Partial<NewExampleRecord>): Promise<ExampleRecord | null> {
+  async update(
+    id: string,
+    data: Partial<NewExampleRecord>,
+  ): Promise<ExampleRecord | null> {
     const [record] = await db
       .update(examples)
       .set({ ...data, updatedAt: new Date() })
@@ -752,9 +822,10 @@ export const ExampleRepository = {
   },
 
   async delete(id: string): Promise<boolean> {
-    const result = await db.delete(examples).where(eq(examples.id, id)).returning({
-      id: examples.id,
-    });
+    const result = await db
+      .delete(examples)
+      .where(eq(examples.id, id))
+      .returning({ id: examples.id });
     return result.length > 0;
   },
 };
@@ -767,12 +838,12 @@ export const ExampleRepository = {
 - `update` 時に `updatedAt` を自動更新
 - **`date` カラムは `mode: 'string'` を使用:** `mode: 'date'` だと postgres.js が JavaScript `Date`
   をフルタイムスタンプとして送信し、`eq()` 比較が失敗する。`mode: 'string'`（`YYYY-MM-DD`
-  文字列）にして、OpenAPI スキーマ（`z.string().date()`）でフォーマットを検証する設計が正しい
+  文字列）にして、Zod スキーマ（`z.iso.date()`）でフォーマットを検証する設計が正しい
 
 #### service.ts — ビジネスロジック層
 
 ```typescript
-import type { CreateExample } from '@<scope>/shared';
+import type { CreateExample, UpdateExample } from './schema.ts';
 import { ConflictError, NotFoundError } from '@/lib/errors.ts';
 import { ExampleRepository } from './repository.ts';
 
@@ -788,8 +859,22 @@ export const ExampleService = {
     if (!record) throw new NotFoundError('データが見つかりません');
     return record;
   },
+
+  async update(id: string, data: UpdateExample) {
+    const record = await ExampleRepository.update(id, data);
+    if (!record) throw new NotFoundError('データが見つかりません');
+    return record;
+  },
+
+  async delete(id: string) {
+    const deleted = await ExampleRepository.delete(id);
+    if (!deleted) throw new NotFoundError('データが見つかりません');
+  },
 };
 ```
+
+**ポイント:** service.ts は `./schema.ts`（feature 内の pure Zod スキーマ）から型を import する。
+従来の `@<scope>/shared` からの import は不要。
 
 #### openapi.ts — OpenAPI用Zodスキーマ
 
@@ -919,30 +1004,30 @@ export const healthRoutes = new OpenAPIHono().openapi(healthCheckRoute, (c) => {
 {
   "name": "@<scope>/web",
   "version": "0.0.0",
-  "nodeModulesDir": "auto",
+  "exports": "./src/main.tsx",
   "imports": {
-    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^4.7.0",
-    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.18",
-    "vite": "npm:vite@^7.3.1",
-    "react": "npm:react@^19.2.4",
-    "react/": "npm:/react@^19.2.4/",
+    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^5.1",
+    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1",
+    "vite": "npm:vite@^7.3",
+    "react": "npm:react@^19.2",
+    "react/": "npm:/react@^19.2/",
     "@types/react": "npm:@types/react@^19.2",
-    "react-dom": "npm:react-dom@^19.2.4",
-    "react-dom/": "npm:/react-dom@^19.2.4/",
+    "react-dom": "npm:react-dom@^19.2",
+    "react-dom/": "npm:/react-dom@^19.2/",
     "react-error-boundary": "npm:react-error-boundary@^6.1",
-    "react-router-dom": "npm:react-router-dom@^7.13.0",
-    "@tanstack/react-query": "npm:@tanstack/react-query@^5.90.20",
-    "@tanstack/react-query-devtools": "npm:@tanstack/react-query-devtools@^5.91.2",
-    "react-hook-form": "npm:react-hook-form@^7.71.1",
-    "@hookform/resolvers": "npm:@hookform/resolvers@^3.10.0",
-    "zustand": "npm:zustand@^5.0.10",
-    "hono": "npm:hono@^4.11.6",
-    "clsx": "npm:clsx@^2.1.1",
-    "dayjs": "npm:dayjs@^1.11.19",
-    "tailwindcss": "npm:tailwindcss@^4.1.18",
-    "msw": "npm:msw@^2.12.8",
-    "@testing-library/react": "npm:@testing-library/react@^16.3.2",
-    "jsdom": "npm:jsdom@^28.0.0",
+    "react-router-dom": "npm:react-router-dom@^7.13",
+    "@tanstack/react-query": "npm:@tanstack/react-query@^5.90",
+    "@tanstack/react-query-devtools": "npm:@tanstack/react-query-devtools@^5.91",
+    "react-hook-form": "npm:react-hook-form@^7.71",
+    "@hookform/resolvers": "npm:@hookform/resolvers@^5.2",
+    "zustand": "npm:zustand@^5.0",
+    "hono": "npm:hono@^4.11",
+    "clsx": "npm:clsx@^2.1",
+    "dayjs": "npm:dayjs@^1.11",
+    "tailwindcss": "npm:tailwindcss@^4.1",
+    "msw": "npm:msw@^2.12",
+    "@testing-library/react": "npm:@testing-library/react@^16.3",
+    "jsdom": "npm:jsdom@^28.0",
     "@/": "./src/"
   },
   "tasks": {
@@ -962,9 +1047,9 @@ export const healthRoutes = new OpenAPIHono().openapi(healthCheckRoute, (c) => {
 
 **ポイント:**
 
-- `"nodeModulesDir": "auto"` —
-  Vite/TailwindがNode.jsモジュール解決を必要とするため、ワークスペースルートで有効化
+- `nodeModulesDir` はワークスペースルートの `deno.json` で設定する（メンバーでは指定不要）
 - Viteは `deno run -A npm:vite` で直接実行（グローバルインストール不要）
+- `@hookform/resolvers@^5.2` — v5.x は `@hookform/resolvers/zod` でインポートする
 - `compilerOptions.lib` に `dom` を追加（ブラウザAPI用）
 - `"jsxImportSource": "react"` — `jsx: "react-jsx"` だけではDenoが `JSX.IntrinsicElements`
   等の型を解決できないため必須。`react/jsx-runtime` の型定義を参照するために必要
@@ -988,6 +1073,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(import.meta.dirname!, './src'),
+      '@app/api/schemas': resolve(import.meta.dirname!, '../api/src/schemas/index.ts'),
     },
   },
   server: {
@@ -1007,6 +1093,8 @@ export default defineConfig({
 - `__dirname` → `import.meta.dirname`（Deno/ESModules標準）
 - Tailwind CSS v4 は Vite プラグインとして統合（postcss.config 不要）
 - `/api` プロキシで CORS なしにバックエンドと通信
+- **重要:** `@app/api/schemas` の alias が必須 — Vite は Deno ワークスペースのサブパスエクスポートを
+  解決できないため、明示的に `../api/src/schemas/index.ts` へのパス解決を追加する
 
 ### 5.3 ディレクトリ構造（Bulletproof React ベース）
 
@@ -1067,7 +1155,7 @@ packages/web/src/
 
 - **ページは `app/routes/` に配置**し、`features/` の中にはページを置かない
 - ページは複数のfeatureを「合成」するレイヤーであり、feature自体は再利用可能なドメインモジュール
-- インポート方向は一方向: `shared → features → app/routes`（featuresはappを知らない）
+- インポート方向は一方向: `@<scope>/api/schemas → features → app/routes`（featuresはappを知らない）
 - `providers/` は廃止し `app/provider.tsx` に統合（単一のプロバイダーツリー）
 - `BrowserRouter` → `createBrowserRouter`（Data Router API対応）
 
@@ -1346,6 +1434,130 @@ export type ExampleResponse = InferResponseType<ExampleApi[':id']['$get'], 200>;
 </html>
 ```
 
+### 5.13 フォームコンポーネントパターン（react-hook-form + Zod）
+
+API の Zod スキーマを `@<scope>/api/schemas` から import し、`zodResolver` で react-hook-form
+に統合する。
+
+#### 作成フォーム（create-form.tsx）
+
+```tsx
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createExampleSchema } from '@app/api/schemas';
+import type { z } from 'zod';
+import { useCreateExample } from '../api/mutations.ts';
+
+// Zod v4: z.input は default() 付きフィールドを optional にする（フォーム入力用）
+type CreateExampleInput = z.input<typeof createExampleSchema>;
+
+export function CreateForm({ onCreated }: { onCreated: (data: ExampleData) => void }) {
+  const createMutation = useCreateExample();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<CreateExampleInput>({
+    resolver: zodResolver(createExampleSchema),
+    defaultValues: { date: todayString(), field1: false, field2: '' },
+  });
+
+  const field1Value = watch('field1');
+
+  const onSubmit = (data: CreateExampleInput) => {
+    createMutation.mutate(data, {
+      onSuccess: (res) => {
+        onCreated(res as ExampleData);
+        reset({ date: todayString(), field1: false, field2: '' });
+      },
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className='space-y-3 rounded border p-4'>
+      <div>
+        <input type='date' {...register('date')} className='w-full rounded border px-3 py-1.5' />
+        {errors.date && <p className='mt-1 text-sm text-red-600'>{errors.date.message}</p>}
+      </div>
+      <div>
+        <label className='flex items-center gap-2 text-sm text-gray-600'>
+          <input
+            type='checkbox'
+            checked={field1Value ?? false}
+            onChange={(e) => setValue('field1', e.target.checked)}
+          />
+          Field1
+        </label>
+      </div>
+      <div>
+        <input type='text' {...register('field2')} className='w-full rounded border px-3 py-1.5' />
+        {errors.field2 && <p className='mt-1 text-sm text-red-600'>{errors.field2.message}</p>}
+      </div>
+      <button type='submit' disabled={createMutation.isPending}>
+        {createMutation.isPending ? 'Creating...' : 'Create'}
+      </button>
+    </form>
+  );
+}
+```
+
+#### 更新フォーム（update-form.tsx）
+
+```tsx
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { updateExampleSchema } from '@app/api/schemas';
+import type { z } from 'zod';
+import { useUpdateExample } from '../api/mutations.ts';
+
+type UpdateExampleInput = z.input<typeof updateExampleSchema>;
+
+export function UpdateForm({ id, onUpdated }: { id: string; onUpdated: () => void }) {
+  const updateMutation = useUpdateExample();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<UpdateExampleInput>({
+    resolver: zodResolver(updateExampleSchema),
+    defaultValues: { field1: undefined, field2: undefined },
+  });
+
+  const onSubmit = (data: UpdateExampleInput) => {
+    // undefined のフィールドを除去
+    const filtered = Object.fromEntries(
+      Object.entries(data).filter(([_, v]) => v !== undefined && v !== ''),
+    );
+    updateMutation.mutate(
+      { id, data: filtered },
+      {
+        onSuccess: () => {
+          reset();
+          onUpdated();
+        },
+      },
+    );
+  };
+
+  // ...（JSXはcreate-formと同様のパターン）
+}
+```
+
+**ポイント:**
+
+- `z.input<typeof schema>` を useForm の型パラメータに使用（`z.infer` ではない）。 Zod v4 では
+  `default()` 付きフィールドの input 型は optional になる
+- `zodResolver(schema)` でフォームバリデーションを Zod スキーマに委譲
+- checkbox は `register` ではなく `watch` + `setValue` で手動制御 （`register` は文字列ベースのため
+  boolean に適さない）
+- 更新フォームでは `undefined` / 空文字列のフィールドを除去してから送信（部分更新パターン）
+
 ---
 
 ## 6. Lint / Format 設定
@@ -1422,7 +1634,7 @@ let testDb: Database | null = null;
 async function initTestDb(): Promise<Database> {
   const { PGlite } = await import('@electric-sql/pglite');
   const { drizzle } = await import('drizzle-orm/pglite');
-  const schema = await import('@/db/schema.ts');
+  const schema = await import('@/db/tables.ts');
 
   const client = new PGlite();
   pgliteClient = client;
@@ -1441,7 +1653,7 @@ async function initTestDb(): Promise<Database> {
 
 async function cleanupTables() {
   if (!testDb) return;
-  const schema = await import('@/db/schema.ts');
+  const schema = await import('@/db/tables.ts');
   for (const table of Object.values(schema)) {
     await testDb.delete(table);
   }
@@ -1583,12 +1795,16 @@ export function createWrapper() {
 
 ## 8. フロントエンド←→バックエンド型安全RPC接続
 
-このアーキテクチャの核心部分。Hono の RPC 機能により、バックエンドのルート定義からフロントエンドの
-API 呼び出しまで **エンドツーエンドの型安全** を実現する。
+このアーキテクチャの核心部分。2つの型共有メカニズムがある:
+
+1. **RPC 型推論** — Hono の RPC 機能により、ルート定義からフロントエンドの API 呼び出しまで
+   エンドツーエンドの型安全を実現
+2. **スキーマ共有** — `@<scope>/api/schemas` サブパスエクスポートで Zod スキーマを
+   フロントエンドのフォームバリデーションに再利用
 
 ### 8.1 型の流れ
 
-```
+```text
 [Backend]                              [Frontend]
 routes.ts                              api.ts
   ↓ createRoute() + .openapi()           ↓ hc<AppType>()
@@ -1602,17 +1818,25 @@ index.ts
   ↓
 deno.json workspace
   → packages/web が @<scope>/api の型を自動解決
+
+[スキーマ共有（フォームバリデーション用）]
+features/<name>/schema.ts              create-form.tsx
+  ↓ pure Zod スキーマ                     ↓ import from '@<scope>/api/schemas'
+schemas/index.ts                       zodResolver(createExampleSchema)
+  ↓ サブパスエクスポート                   → react-hook-form でバリデーション
 ```
 
 ### 8.2 必要な設定（pnpm版との比較）
 
-| 設定項目             | pnpm版                               | Deno版                               |
-| -------------------- | ------------------------------------ | ------------------------------------ |
-| API型公開            | `tsconfig.json` の `composite: true` | `deno.json` の `exports`             |
-| Web→API参照          | `tsconfig.json` の `references`      | ワークスペース自動解決               |
-| パッケージ参照       | `package.json` の `workspace:*`      | `deno.json` のワークスペースメンバー |
-| ルート型エクスポート | 同じ（`typeof routes`）              | 同じ（`typeof routes`）              |
-| RPCクライアント      | `hc<AppType>(url)`                   | `hc<AppType>(url)`                   |
+| 設定項目             | pnpm版                               | Deno版                                      |
+| -------------------- | ------------------------------------ | ------------------------------------------- |
+| API型公開            | `tsconfig.json` の `composite: true` | `deno.json` の `exports`                    |
+| Web→API参照          | `tsconfig.json` の `references`      | ワークスペース自動解決                      |
+| パッケージ参照       | `package.json` の `workspace:*`      | `deno.json` のワークスペースメンバー        |
+| ルート型エクスポート | 同じ（`typeof routes`）              | 同じ（`typeof routes`）                     |
+| RPCクライアント      | `hc<AppType>(url)`                   | `hc<AppType>(url)`                          |
+| スキーマ共有         | `@<scope>/shared` パッケージ         | `@<scope>/api/schemas` サブパスエクスポート |
+| Viteサブパス解決     | なし（Node.jsが自動解決）            | `vite.config.ts` に `resolve.alias` が必要  |
 
 **Deno版で簡素化されたもの:**
 
@@ -1620,12 +1844,15 @@ deno.json workspace
 2. `references` 不要
 3. `workspace:*` 不要
 4. ワークスペースメンバー間は `name` で自動解決
+5. `shared` パッケージ不要（API がスキーマの Single Source of Truth）
 
 ### 8.3 制約
 
 - ルートは **必ずメソッドチェーン** で登録する（`app.route().route()...`）。個別に `app.route()`
   を呼ぶと型推論が途切れる。
 - `AppType` は `routes` 変数の型（`app` の型ではない）。
+- Vite は Deno ワークスペースのサブパスエクスポートを解決できないため、`@<scope>/api/schemas`
+  を使う場合は `vite.config.ts` に `resolve.alias` を追加する必要がある。
 
 ---
 
@@ -1633,37 +1860,40 @@ deno.json workspace
 
 ### 9.1 基本原則
 
-| 原則               | 説明                                                              |
-| ------------------ | ----------------------------------------------------------------- |
-| **Feature独立**    | 各featureは自己完結し、他featureへの直接依存を持たない            |
-| **公開API**        | `index.ts` でエクスポートしたものだけが外部から利用可能           |
-| **依存方向**       | `app/routes` → `features` → `components` → `shared`（逆方向禁止） |
-| **コロケーション** | テスト・型・定数はfeature内に配置                                 |
+| 原則               | 説明                                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Feature独立**    | 各featureは自己完結し、他featureへの直接依存を持たない                                                                        |
+| **公開API**        | `index.ts` でエクスポートしたものだけが外部から利用可能                                                                       |
+| **依存方向**       | `app/routes` → `features` → `components`（逆方向禁止）。Web feature は `@<scope>/api/schemas` から Zod スキーマを import 可能 |
+| **コロケーション** | テスト・型・定数はfeature内に配置                                                                                             |
 
 ### 9.2 インポートルール
 
-```
+```text
 OK:
-  features/a/components/X.tsx → features/a/api/queries.ts  (同一feature内)
-  app/routes/home.tsx → features/a/index.ts                (公開API経由)
-  features/a/service.ts → @<scope>/shared                  (shared参照)
+  features/a/components/X.tsx → features/a/api/queries.ts    (同一feature内)
+  app/routes/home.tsx → features/a/index.ts                  (公開API経由)
+  features/a/components/X.tsx → @<scope>/api/schemas         (APIスキーマ参照)
+  features/a/service.ts → ./schema.ts                        (同一feature内スキーマ)
 
 NG:
-  features/a/X.tsx → features/b/components/Y.tsx           (feature間直接参照)
-  features/a/X.tsx → features/b/repository.ts              (内部実装への参照)
-  components/ui/Button.tsx → features/a/api/queries.ts     (逆方向参照)
+  features/a/X.tsx → features/b/components/Y.tsx             (feature間直接参照)
+  features/a/X.tsx → features/b/repository.ts                (内部実装への参照)
+  components/ui/Button.tsx → features/a/api/queries.ts       (逆方向参照)
 ```
 
 ### 9.3 バックエンド Feature 構成
 
-```
+```text
 features/<name>/
-├── index.ts              # 公開: routes, schema のみ
-├── schema.ts             # Drizzleテーブル定義 + 型推論
+├── index.ts              # 公開: routes, table のみ
+├── table.ts              # Drizzleテーブル定義 + 型推論
+├── schema.ts             # Pure Zodバリデーションスキーマ（Web共有用）
+├── constants.ts          # ドメイン定数（as const + 型導出）
+├── openapi.ts            # OpenAPIメタデータ付きZodスキーマ
 ├── repository.ts         # DB操作（Drizzle query builder）
 ├── service.ts            # ビジネスロジック（Repository呼出 + エラー判定）
 ├── routes.ts             # HTTPハンドラ（OpenAPIHono）
-├── openapi.ts    # OpenAPI用Zodスキーマ
 └── __tests__/
     ├── repository.test.ts
     ├── service.test.ts
@@ -1709,23 +1939,26 @@ features/<name>/
 
 ### 10.2 コード規約
 
-| 項目                   | 規約                                                                  |
-| ---------------------- | --------------------------------------------------------------------- |
-| **モジュール**         | ESModules (`import`/`export`)                                         |
-| **インポートパス**     | `.ts` / `.tsx` 拡張子必須                                             |
-| **Node API**           | `node:` プレフィックス必須（例: `import fs from 'node:fs'`）          |
-| **環境変数**           | `Deno.env.get('X')`（`process.env` ではない）                         |
-| **クォート**           | シングルクォート                                                      |
-| **セミコロン**         | あり                                                                  |
-| **インデント**         | スペース 2                                                            |
-| **行幅**               | 100文字                                                               |
-| **末尾カンマ**         | ES5                                                                   |
-| **Service/Repository** | オブジェクトリテラル（classは使わない）                               |
-| **エラー**             | カスタム AppError サブクラスを throw                                  |
-| **DB列名**             | snake_case（Drizzle定義）                                             |
-| **TS プロパティ**      | camelCase（Drizzle推論）                                              |
-| **パスエイリアス**     | `@/` → `./src/`（import map で解決）                                  |
-| **状態管理**           | サーバー状態=TanStack Query, UI状態=Zustand, フォーム=react-hook-form |
+| 項目                   | 規約                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| **モジュール**         | ESModules (`import`/`export`)                                                   |
+| **インポートパス**     | `.ts` / `.tsx` 拡張子必須                                                       |
+| **Node API**           | `node:` プレフィックス必須（例: `import fs from 'node:fs'`）                    |
+| **環境変数**           | `Deno.env.get('X')`（`process.env` ではない）                                   |
+| **クォート**           | シングルクォート                                                                |
+| **セミコロン**         | あり                                                                            |
+| **インデント**         | スペース 2                                                                      |
+| **行幅**               | 100文字                                                                         |
+| **末尾カンマ**         | ES5                                                                             |
+| **Service/Repository** | オブジェクトリテラル（classは使わない）                                         |
+| **エラー**             | カスタム AppError サブクラスを throw                                            |
+| **DB列名**             | snake_case（Drizzle定義）                                                       |
+| **TS プロパティ**      | camelCase（Drizzle推論）                                                        |
+| **パスエイリアス**     | `@/` → `./src/`（import map で解決）                                            |
+| **状態管理**           | サーバー状態=TanStack Query, UI状態=Zustand, フォーム=react-hook-form           |
+| **Zodバージョン**      | Zod v4（`z.iso.date()`, `z.iso.datetime()`, `.partial()` が `.default()` 保持） |
+| **Zodフォーム型**      | `z.input<typeof schema>` (入力型) / `z.infer<typeof schema>` (出力型)           |
+| **スキーマ共有**       | `@<scope>/api/schemas` サブパスエクスポート経由                                 |
 
 ### 10.3 pnpm版からの規約変更まとめ
 
@@ -1743,12 +1976,13 @@ features/<name>/
 ### 10.4 エクスポートパターン
 
 ```typescript
-// バレルエクスポート（index.ts）
+// バレルエクスポート（features/<name>/index.ts）
 export { exampleRoutes } from './routes.ts';
-export { examples } from './schema.ts';
+export { examples } from './table.ts';
 
 // 内部モジュールは index.ts に含めない → 外部からアクセス不可
-// repository.ts, service.ts は非公開
+// repository.ts, service.ts, schema.ts, constants.ts は非公開
+// （schema.ts, constants.ts は schemas/ サブパスエクスポート経由でWebが参照）
 ```
 
 ---
@@ -1767,33 +2001,26 @@ export { examples } from './schema.ts';
 - [ ] `compose.yml` 作成
 - [ ] `deno install`
 
-### Phase 2: shared パッケージ
+### Phase 2: api パッケージ
 
-- [ ] `packages/shared/deno.json` 作成
-- [ ] `packages/shared/src/index.ts` 作成（バレル）
-- [ ] `packages/shared/src/constants/` 作成
-- [ ] `packages/shared/src/schemas/` 作成
-- [ ] `packages/shared/src/types/` 作成
-- [ ] サンプルスキーマ・定数を1つ作成
-
-### Phase 3: api パッケージ
-
-- [ ] `packages/api/deno.json` 作成
+- [ ] `packages/api/deno.json` 作成（`exports` にサブパス `"./schemas"` を含める）
 - [ ] `packages/api/drizzle.config.ts` 作成
 - [ ] `packages/api/src/index.ts` 作成（Deno.serve エントリーポイント）
 - [ ] `packages/api/src/app.ts` 作成（Honoアプリ + AppType）
 - [ ] `packages/api/src/db/index.ts` 作成（Drizzle DB接続 + `setDb()` テスト用DI）
-- [ ] `packages/api/src/db/schema.ts` 作成（スキーマ集約）
+- [ ] `packages/api/src/db/tables.ts` 作成（テーブル集約再エクスポート）
+- [ ] `packages/api/src/schemas/index.ts` 作成（Web向けZodスキーマ・定数の集約エクスポート）
 - [ ] `packages/api/src/middleware/` 作成（LogTape logger, error-handler）
 - [ ] `packages/api/src/lib/errors.ts` 作成
 - [ ] `packages/api/src/features/health/` 作成（最小feature）
 - [ ] `packages/api/src/test/setup.ts` 作成（PGLite + @std/testing）
-- [ ] サンプルfeatureを1つ作成（schema → repository → service → routes → tests）
+- [ ] サンプルfeatureを1つ作成（table → schema → constants → openapi → repository → service → routes
+      → tests）
 
-### Phase 4: web パッケージ
+### Phase 3: web パッケージ
 
 - [ ] `packages/web/deno.json` 作成
-- [ ] `packages/web/vite.config.ts` 作成
+- [ ] `packages/web/vite.config.ts` 作成（`@<scope>/api/schemas` の `resolve.alias` を含める）
 - [ ] `packages/web/index.html` 作成
 - [ ] `packages/web/src/main.tsx` 作成（AppProvider を呼ぶだけ）
 - [ ] `packages/web/src/vite-env.d.ts` 作成
@@ -1806,7 +2033,7 @@ export { examples } from './schema.ts';
 - [ ] `packages/web/src/test/` セットアップ（setup.ts, mocks/, utils.tsx）
 - [ ] ディレクトリ構造作成（features/, components/, hooks/, stores/, types/）
 
-### Phase 5: 検証
+### Phase 4: 検証
 
 - [ ] `deno install` — 依存解決確認
 - [ ] `deno lint` — エラーなし
