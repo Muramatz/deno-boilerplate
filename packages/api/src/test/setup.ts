@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, it } from '@std/testing/bdd';
 import { expect } from '@std/expect';
-import { setDb, type Database } from '@/db/index.ts';
+import { type Database, setDb } from '@/db/index.ts';
 
 let pgliteClient: { close(): Promise<void> } | null = null;
 let testDb: Database | null = null;

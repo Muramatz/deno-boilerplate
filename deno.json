@@ -1,7 +1,6 @@
 {
   "nodeModulesDir": "auto",
   "workspace": [
-    "./packages/shared",
     "./packages/api",
     "./packages/web"
   ],
@@ -16,7 +15,7 @@
     "dev:api": "deno task --filter '@app/api' dev",
     "dev:web": "deno task --filter '@app/web' dev",
     "dev": "deno task dev:api & deno task dev:web",
-    "test": "deno task --filter '@app/shared' test && deno task --filter '@app/api' test",
+    "test": "deno task --filter '@app/api' test",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",

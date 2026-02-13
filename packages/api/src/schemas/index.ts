@@ -8,8 +8,5 @@ export {
 export type { CreateExample, Example, UpdateExample } from '../features/example/schema.ts';
 
 // 定数
-export {
-  EXAMPLE_STATUS_IDS,
-  EXAMPLE_STATUSES,
-} from '../features/example/constants.ts';
+export { EXAMPLE_STATUS_IDS, EXAMPLE_STATUSES } from '../features/example/constants.ts';
 export type { ExampleStatusId } from '../features/example/constants.ts';

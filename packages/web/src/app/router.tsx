@@ -8,7 +8,12 @@ import { NotFoundPage } from './routes/not-found.tsx';
 function RouteErrorFallback() {
   const error = useRouteError();
   const normalizedError = error instanceof Error ? error : new Error(String(error));
-  return <ErrorFallback error={normalizedError} resetErrorBoundary={() => globalThis.location.reload()} />;
+  return (
+    <ErrorFallback
+      error={normalizedError}
+      resetErrorBoundary={() => globalThis.location.reload()}
+    />
+  );
 }
 
 const router = createBrowserRouter([

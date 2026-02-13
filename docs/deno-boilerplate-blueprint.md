@@ -22,32 +22,32 @@
 
 ## 1. 技術スタック一覧
 
-| カテゴリ                      | 技術                                  | バージョン    | 用途                                                                                                                                                 |
-| ----------------------------- | ------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **言語**                      | TypeScript                            | Deno組み込み  | 全パッケージ共通、strict mode                                                                                                                        |
-| **ランタイム/パッケージ管理** | Deno                                  | >=2.x         | ランタイム + ワークスペース + パッケージ管理                                                                                                         |
-| **フロントエンド**            | React                                 | ^19.2         | UI ライブラリ                                                                                                                                        |
-| **ビルド**                    | Vite                                  | ^7.3          | フロントエンドバンドラー + 開発サーバー                                                                                                              |
-| **CSS**                       | Tailwind CSS                          | ^4.1          | ユーティリティファーストCSS（Viteプラグイン統合）                                                                                                    |
-| **状態管理**                  | Zustand                               | ^5.0          | クライアント側UI状態                                                                                                                                 |
-| **サーバー状態**              | TanStack Query                        | ^5.90         | サーバーデータのキャッシュ・同期                                                                                                                     |
-| **フォーム**                  | react-hook-form + @hookform/resolvers | ^7.71 / ^3.10 | フォームバリデーション（Zodと統合）                                                                                                                  |
-| **ルーティング**              | react-router-dom                      | ^7.13         | SPA ルーティング                                                                                                                                     |
-| **バックエンド**              | Hono                                  | ^4.11         | 軽量 Web フレームワーク                                                                                                                              |
-| **OpenAPI**                   | @hono/zod-openapi                     | ^1.2          | Zodスキーマから自動ドキュメント生成                                                                                                                  |
-| **ORM**                       | Drizzle ORM                           | ^0.45         | 型安全なDB操作                                                                                                                                       |
-| **DBドライバ**                | postgres (postgres.js)                | ^3.4          | PostgreSQL接続                                                                                                                                       |
+| カテゴリ                      | 技術                                  | バージョン    | 用途                                                                                                                        |
+| ----------------------------- | ------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **言語**                      | TypeScript                            | Deno組み込み  | 全パッケージ共通、strict mode                                                                                               |
+| **ランタイム/パッケージ管理** | Deno                                  | >=2.x         | ランタイム + ワークスペース + パッケージ管理                                                                                |
+| **フロントエンド**            | React                                 | ^19.2         | UI ライブラリ                                                                                                               |
+| **ビルド**                    | Vite                                  | ^7.3          | フロントエンドバンドラー + 開発サーバー                                                                                     |
+| **CSS**                       | Tailwind CSS                          | ^4.1          | ユーティリティファーストCSS（Viteプラグイン統合）                                                                           |
+| **状態管理**                  | Zustand                               | ^5.0          | クライアント側UI状態                                                                                                        |
+| **サーバー状態**              | TanStack Query                        | ^5.90         | サーバーデータのキャッシュ・同期                                                                                            |
+| **フォーム**                  | react-hook-form + @hookform/resolvers | ^7.71 / ^3.10 | フォームバリデーション（Zodと統合）                                                                                         |
+| **ルーティング**              | react-router-dom                      | ^7.13         | SPA ルーティング                                                                                                            |
+| **バックエンド**              | Hono                                  | ^4.11         | 軽量 Web フレームワーク                                                                                                     |
+| **OpenAPI**                   | @hono/zod-openapi                     | ^1.2          | Zodスキーマから自動ドキュメント生成                                                                                         |
+| **ORM**                       | Drizzle ORM                           | ^0.45         | 型安全なDB操作                                                                                                              |
+| **DBドライバ**                | postgres (postgres.js)                | ^3.4          | PostgreSQL接続                                                                                                              |
 | **バリデーション**            | Zod                                   | ^4.0          | フロント・バック共有スキーマ（※@hono/zod-openapi v1.xはZod v4必須。v4では`.partial()`でも`.default()`が保持される点に注意） |
-| **ロギング**                  | @logtape/logtape                      | ^0.10         | 構造化ログ（マルチランタイム対応）                                                                                                                   |
-| **Lint/Format**               | deno lint / deno fmt                  | Deno組み込み  | Linter + Formatter                                                                                                                                   |
-| **テスト**                    | deno test + @std/testing              | Deno組み込み  | ユニット・統合テスト                                                                                                                                 |
-| **テストDB**                  | PGLite (@electric-sql/pglite)         | ^0.3          | インメモリPostgreSQL（WASM）                                                                                                                         |
-| **UIテスト**                  | @testing-library/react                | ^16.3         | Reactコンポーネントテスト                                                                                                                            |
-| **モック**                    | MSW (Mock Service Worker)             | ^2.12         | API モック（フロントエンドテスト用）                                                                                                                 |
-| **日付**                      | date-fns                              | ^4.1          | バックエンド日付操作                                                                                                                                 |
-| **日付(FE)**                  | dayjs                                 | ^1.11         | フロントエンド日付操作                                                                                                                               |
-| **クラス結合**                | clsx                                  | ^2.1          | className の条件結合                                                                                                                                 |
-| **環境変数**                  | @std/dotenv                           | Deno標準      | .envファイル読み込み                                                                                                                                 |
+| **ロギング**                  | @logtape/logtape                      | ^0.10         | 構造化ログ（マルチランタイム対応）                                                                                          |
+| **Lint/Format**               | deno lint / deno fmt                  | Deno組み込み  | Linter + Formatter                                                                                                          |
+| **テスト**                    | deno test + @std/testing              | Deno組み込み  | ユニット・統合テスト                                                                                                        |
+| **テストDB**                  | PGLite (@electric-sql/pglite)         | ^0.3          | インメモリPostgreSQL（WASM）                                                                                                |
+| **UIテスト**                  | @testing-library/react                | ^16.3         | Reactコンポーネントテスト                                                                                                   |
+| **モック**                    | MSW (Mock Service Worker)             | ^2.12         | API モック（フロントエンドテスト用）                                                                                        |
+| **日付**                      | date-fns                              | ^4.1          | バックエンド日付操作                                                                                                        |
+| **日付(FE)**                  | dayjs                                 | ^1.11         | フロントエンド日付操作                                                                                                      |
+| **クラス結合**                | clsx                                  | ^2.1          | className の条件結合                                                                                                        |
+| **環境変数**                  | @std/dotenv                           | Deno標準      | .envファイル読み込み                                                                                                        |
 
 ### pnpm/Node.js版から削除された依存
 
@@ -134,9 +134,14 @@ project-root/
 - `workspace` でモノレポメンバーを定義
 - ルートの `imports` は全ワークスペースメンバーに継承される
 - `fmt` 設定はBiome版と同じルール（シングルクォート、セミコロンあり、インデント2、行幅100）
-- **重要:** `deno task --recursive` / `deno task -r` はルート自身のタスクも実行するため、ルートに同名タスクがあると無限ループになる。`--filter` でパッケージを明示指定すること
-- **重要:** `deno test packages/` はワークスペースメンバーごとにテストを重複実行する。`deno task --filter '<pkg>' test` で各メンバーのテストタスクを個別実行すること
-- **重要:** `nodeModulesDir` はワークスペースルートでのみ指定可能（メンバーの deno.json では無視される）。Vite/Tailwind のために `"nodeModulesDir": "auto"` をルートに配置
+- **重要:** `deno task --recursive` / `deno task -r`
+  はルート自身のタスクも実行するため、ルートに同名タスクがあると無限ループになる。`--filter`
+  でパッケージを明示指定すること
+- **重要:** `deno test packages/`
+  はワークスペースメンバーごとにテストを重複実行する。`deno task --filter '<pkg>' test`
+  で各メンバーのテストタスクを個別実行すること
+- **重要:** `nodeModulesDir` はワークスペースルートでのみ指定可能（メンバーの deno.json
+  では無視される）。Vite/Tailwind のために `"nodeModulesDir": "auto"` をルートに配置
 
 ### 2.3 .vscode/settings.json
 
@@ -322,7 +327,7 @@ export const baseItemSchema = z.object({
 
 // 作成スキーマ（ベース + 追加フィールド）
 export const createItemSchema = baseItemSchema.extend({
-  date: z.string().date(),  // YYYY-MM-DD 文字列をバリデーション
+  date: z.string().date(), // YYYY-MM-DD 文字列をバリデーション
 });
 export type CreateItem = z.infer<typeof createItemSchema>;
 
@@ -403,9 +408,11 @@ export type { CreateItem, Item, UpdateItem } from '../schemas/index.ts';
 - `@/` パスエイリアスは `imports` で解決（tsc-alias不要）
 - `pino` → `@logtape/logtape`（Denoネイティブ対応ロガー）
 - Denoの権限モデル: `--allow-net`, `--allow-env`, `--allow-read` を明示
-- テストタスクには追加で `--allow-write --allow-sys --allow-ffi` が必要（`drizzle-kit/api` の `pushSchema` が内部で `os.homedir()` を呼ぶため `--allow-sys` が必須）
+- テストタスクには追加で `--allow-write --allow-sys --allow-ffi` が必要（`drizzle-kit/api` の
+  `pushSchema` が内部で `os.homedir()` を呼ぶため `--allow-sys` が必須）
 - `drizzle-orm/` のサブパスインポート用エントリも明示
-- `drizzle-kit` を import map に含める（`drizzle.config.ts` の `import { defineConfig } from 'drizzle-kit'` をDenoが解決するため）
+- `drizzle-kit` を import map に含める（`drizzle.config.ts` の
+  `import { defineConfig } from 'drizzle-kit'` をDenoが解決するため）
 
 ### 4.2 ディレクトリ構造
 
@@ -647,7 +654,8 @@ export function setDb(newDb: Database) {
 
 **ポイント:**
 
-- `export let db` にすることで、ESM live binding により `setDb()` の変更が全インポート先に即時反映される
+- `export let db` にすることで、ESM live binding により `setDb()`
+  の変更が全インポート先に即時反映される
 - テスト時は PGLite インスタンスを `setDb()` で注入し、本番コードを一切変更せずにテスト可能
 - `vi.mock` のようなモジュールモックが不要なシンプルな依存注入パターン
 
@@ -757,7 +765,9 @@ export const ExampleRepository = {
 - クラスではなくオブジェクトリテラル（インスタンス生成不要）
 - 見つからない場合は `null` を返す（エラーは投げない）
 - `update` 時に `updatedAt` を自動更新
-- **`date` カラムは `mode: 'string'` を使用:** `mode: 'date'` だと postgres.js が JavaScript `Date` をフルタイムスタンプとして送信し、`eq()` 比較が失敗する。`mode: 'string'`（`YYYY-MM-DD` 文字列）にして、OpenAPI スキーマ（`z.string().date()`）でフォーマットを検証する設計が正しい
+- **`date` カラムは `mode: 'string'` を使用:** `mode: 'date'` だと postgres.js が JavaScript `Date`
+  をフルタイムスタンプとして送信し、`eq()` 比較が失敗する。`mode: 'string'`（`YYYY-MM-DD`
+  文字列）にして、OpenAPI スキーマ（`z.string().date()`）でフォーマットを検証する設計が正しい
 
 #### service.ts — ビジネスロジック層
 
@@ -956,9 +966,12 @@ export const healthRoutes = new OpenAPIHono().openapi(healthCheckRoute, (c) => {
   Vite/TailwindがNode.jsモジュール解決を必要とするため、ワークスペースルートで有効化
 - Viteは `deno run -A npm:vite` で直接実行（グローバルインストール不要）
 - `compilerOptions.lib` に `dom` を追加（ブラウザAPI用）
-- `"jsxImportSource": "react"` — `jsx: "react-jsx"` だけではDenoが `JSX.IntrinsicElements` 等の型を解決できないため必須。`react/jsx-runtime` の型定義を参照するために必要
-- `"@types/react"` — React 19 は型定義を同梱していないため必須。これがないと `JSX.IntrinsicElements` が見つからずJSXの型チェックが全て失敗する
-- `"react/": "npm:/react@^19.2/"` — サブパスマッピング。`jsxImportSource` が内部で `react/jsx-runtime` を解決する際に必要（`react-dom/` と同様のパターン）
+- `"jsxImportSource": "react"` — `jsx: "react-jsx"` だけではDenoが `JSX.IntrinsicElements`
+  等の型を解決できないため必須。`react/jsx-runtime` の型定義を参照するために必要
+- `"@types/react"` — React 19 は型定義を同梱していないため必須。これがないと `JSX.IntrinsicElements`
+  が見つからずJSXの型チェックが全て失敗する
+- `"react/": "npm:/react@^19.2/"` — サブパスマッピング。`jsxImportSource` が内部で
+  `react/jsx-runtime` を解決する際に必要（`react-dom/` と同様のパターン）
 - `@/` エイリアスは import map で解決
 - pnpm版の `tsconfig.json` の `references` は不要（ワークスペースで自動解決）
 
@@ -1076,7 +1089,8 @@ createRoot(rootElement).render(
 );
 ```
 
-**ポイント:** `main.tsx` は `AppProvider` を呼ぶだけ。プロバイダーの追加は `app/provider.tsx` で行う。
+**ポイント:** `main.tsx` は `AppProvider` を呼ぶだけ。プロバイダーの追加は `app/provider.tsx`
+で行う。
 
 ### 5.5 app/provider.tsx
 
@@ -1129,7 +1143,8 @@ export function RouterProvider() {
 **ポイント:**
 
 - `createBrowserRouter` はReact Router v7のData Router APIで、loaderやactionにも対応
-- ルート全体を `errorElement` でラップ（Bulletproof Reactパターン）。ルート内で未キャッチの例外が発生した場合にフォールバックUIを表示
+- ルート全体を `errorElement` でラップ（Bulletproof
+  Reactパターン）。ルート内で未キャッチの例外が発生した場合にフォールバックUIを表示
 - `path: '*'` でキャッチオールルートを定義し、404ページを表示
 - ページコンポーネントは `app/routes/` から直接インポート
 
@@ -1399,7 +1414,7 @@ deno fmt --check
 ```typescript
 import { afterAll, afterEach, beforeAll, describe, it } from '@std/testing/bdd';
 import { expect } from '@std/expect';
-import { setDb, type Database } from '@/db/index.ts';
+import { type Database, setDb } from '@/db/index.ts';
 
 let pgliteClient: { close(): Promise<void> } | null = null;
 let testDb: Database | null = null;
@@ -1458,7 +1473,8 @@ export { describe, expect, it };
 
 - `vitest` の `vi.mock` → `setDb()` による ESM live binding でのDB差し替え
 - `@std/testing/bdd` で `describe/it` パターンを維持、`@std/expect` でJest互換のアサーション
-- `useTestDb()` を `describe` 直下で呼ぶだけで `beforeAll`（PGLite初期化 + `setDb`）/ `afterEach`（テーブル掃除）/ `afterAll`（PGLite終了）を自動登録
+- `useTestDb()` を `describe` 直下で呼ぶだけで `beforeAll`（PGLite初期化 + `setDb`）/
+  `afterEach`（テーブル掃除）/ `afterAll`（PGLite終了）を自動登録
 - 本番コード（repository.ts等）は一切変更不要。通常のオブジェクトリテラル + ESMインポートのまま
 
 #### テスト3層パターン
@@ -1617,12 +1633,12 @@ deno.json workspace
 
 ### 9.1 基本原則
 
-| 原則 | 説明 |
-| --- | --- |
-| **Feature独立** | 各featureは自己完結し、他featureへの直接依存を持たない |
-| **公開API** | `index.ts` でエクスポートしたものだけが外部から利用可能 |
-| **依存方向** | `app/routes` → `features` → `components` → `shared`（逆方向禁止） |
-| **コロケーション** | テスト・型・定数はfeature内に配置 |
+| 原則               | 説明                                                              |
+| ------------------ | ----------------------------------------------------------------- |
+| **Feature独立**    | 各featureは自己完結し、他featureへの直接依存を持たない            |
+| **公開API**        | `index.ts` でエクスポートしたものだけが外部から利用可能           |
+| **依存方向**       | `app/routes` → `features` → `components` → `shared`（逆方向禁止） |
+| **コロケーション** | テスト・型・定数はfeature内に配置                                 |
 
 ### 9.2 インポートルール
 
