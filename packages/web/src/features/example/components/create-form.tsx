@@ -1,5 +1,10 @@
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createExampleSchema } from '@app/api/schemas';
+import type { z } from 'zod';
 import { useCreateExample } from '../api/mutations.ts';
+
+type CreateExampleInput = z.input<typeof createExampleSchema>;
 
 export type ExampleData = {
   id: string;
@@ -10,44 +15,53 @@ export type ExampleData = {
   updatedAt: string;
 };
 
-export function CreateForm({ onCreated }: { onCreated: (data: ExampleData) => void }) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]!);
-  const [field1, setField1] = useState(false);
-  const [field2, setField2] = useState('');
-  const createMutation = useCreateExample();
+function todayString(): string {
+  return new Date().toISOString().split('T')[0]!;
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate(
-      { date, field1, field2 },
-      {
-        onSuccess: (data) => {
-          onCreated(data as ExampleData);
-          setField2('');
-        },
+export function CreateForm({ onCreated }: { onCreated: (data: ExampleData) => void }) {
+  const createMutation = useCreateExample();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<CreateExampleInput>({
+    resolver: zodResolver(createExampleSchema),
+    defaultValues: { date: todayString(), field1: false, field2: '' },
+  });
+
+  const field1Value = watch('field1');
+
+  const onSubmit = (data: CreateExampleInput) => {
+    createMutation.mutate(data, {
+      onSuccess: (res) => {
+        onCreated(res as ExampleData);
+        reset({ date: todayString(), field1: false, field2: '' });
       },
-    );
+    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-3 rounded border p-4'>
+    <form onSubmit={handleSubmit(onSubmit)} className='space-y-3 rounded border p-4'>
       <h2 className='text-lg font-semibold'>Create Example</h2>
       <div>
         <label className='block text-sm text-gray-600'>Date</label>
         <input
           type='date'
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
+          {...register('date')}
           className='w-full rounded border px-3 py-1.5'
-          required
         />
+        {errors.date && <p className='mt-1 text-sm text-red-600'>{errors.date.message}</p>}
       </div>
       <div>
         <label className='flex items-center gap-2 text-sm text-gray-600'>
           <input
             type='checkbox'
-            checked={field1}
-            onChange={(e) => setField1(e.target.checked)}
+            checked={field1Value ?? false}
+            onChange={(e) => setValue('field1', e.target.checked)}
           />
           Field1
         </label>
@@ -56,12 +70,11 @@ export function CreateForm({ onCreated }: { onCreated: (data: ExampleData) => vo
         <label className='block text-sm text-gray-600'>Field2</label>
         <input
           type='text'
-          value={field2}
-          onChange={(e) => setField2(e.target.value)}
+          {...register('field2')}
           className='w-full rounded border px-3 py-1.5'
           placeholder='Enter text...'
-          required
         />
+        {errors.field2 && <p className='mt-1 text-sm text-red-600'>{errors.field2.message}</p>}
       </div>
       <button
         type='submit'

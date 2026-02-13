@@ -1,22 +1,37 @@
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { updateExampleSchema } from '@app/api/schemas';
+import type { z } from 'zod';
 import { useUpdateExample } from '../api/mutations.ts';
 
-export function UpdateForm({ id, onUpdated }: { id: string; onUpdated: () => void }) {
-  const [field1, setField1] = useState<boolean | undefined>(undefined);
-  const [field2, setField2] = useState('');
-  const updateMutation = useUpdateExample();
+type UpdateExampleInput = z.input<typeof updateExampleSchema>;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data: Record<string, unknown> = {};
-    if (field1 !== undefined) data.field1 = field1;
-    if (field2) data.field2 = field2;
+export function UpdateForm({ id, onUpdated }: { id: string; onUpdated: () => void }) {
+  const updateMutation = useUpdateExample();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<UpdateExampleInput>({
+    resolver: zodResolver(updateExampleSchema),
+    defaultValues: { field1: undefined, field2: undefined },
+  });
+
+  const field1Value = watch('field1');
+
+  const onSubmit = (data: UpdateExampleInput) => {
+    // undefined のフィールドを除去
+    const filtered = Object.fromEntries(
+      Object.entries(data).filter(([_, v]) => v !== undefined && v !== ''),
+    );
     updateMutation.mutate(
-      { id, data },
+      { id, data: filtered },
       {
         onSuccess: () => {
-          setField2('');
-          setField1(undefined);
+          reset();
           onUpdated();
         },
       },
@@ -24,14 +39,14 @@ export function UpdateForm({ id, onUpdated }: { id: string; onUpdated: () => voi
   };
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-3 rounded border p-4'>
+    <form onSubmit={handleSubmit(onSubmit)} className='space-y-3 rounded border p-4'>
       <h2 className='text-lg font-semibold'>Update Example</h2>
       <div>
         <label className='flex items-center gap-2 text-sm text-gray-600'>
           <input
             type='checkbox'
-            checked={field1 ?? false}
-            onChange={(e) => setField1(e.target.checked)}
+            checked={field1Value ?? false}
+            onChange={(e) => setValue('field1', e.target.checked)}
           />
           Field1
         </label>
@@ -40,11 +55,11 @@ export function UpdateForm({ id, onUpdated }: { id: string; onUpdated: () => voi
         <label className='block text-sm text-gray-600'>Field2</label>
         <input
           type='text'
-          value={field2}
-          onChange={(e) => setField2(e.target.value)}
+          {...register('field2')}
           className='w-full rounded border px-3 py-1.5'
           placeholder='New value...'
         />
+        {errors.field2 && <p className='mt-1 text-sm text-red-600'>{errors.field2.message}</p>}
       </div>
       <button
         type='submit'
