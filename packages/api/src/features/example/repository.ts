@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/index.ts';
-import { type ExampleRecord, examples, type NewExampleRecord } from './schema.ts';
+import { type ExampleRecord, examples, type NewExampleRecord } from './table.ts';
 
 export const ExampleRepository = {
   async create(data: NewExampleRecord): Promise<ExampleRecord> {

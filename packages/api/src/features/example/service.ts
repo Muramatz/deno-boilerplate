@@ -1,4 +1,4 @@
-import type { CreateExample } from '@app/shared';
+import type { CreateExample } from './schema.ts';
 import { ConflictError, NotFoundError } from '@/lib/errors.ts';
 import { ExampleRepository } from './repository.ts';
 

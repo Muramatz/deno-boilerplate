@@ -8,7 +8,7 @@ import {
   UpdateExampleRequestSchema,
 } from './openapi.ts';
 import { ExampleService } from './service.ts';
-import type { ExampleRecord } from './schema.ts';
+import type { ExampleRecord } from './table.ts';
 
 function formatResponse(record: ExampleRecord) {
   return {

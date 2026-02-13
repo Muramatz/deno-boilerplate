@@ -8,7 +8,7 @@ let testDb: Database | null = null;
 async function initTestDb(): Promise<Database> {
   const { PGlite } = await import('@electric-sql/pglite');
   const { drizzle } = await import('drizzle-orm/pglite');
-  const schema = await import('@/db/schema.ts');
+  const schema = await import('@/db/tables.ts');
 
   const client = new PGlite();
   pgliteClient = client;
@@ -27,7 +27,7 @@ async function initTestDb(): Promise<Database> {
 
 async function cleanupTables() {
   if (!testDb) return;
-  const schema = await import('@/db/schema.ts');
+  const schema = await import('@/db/tables.ts');
   for (const table of Object.values(schema)) {
     await testDb.delete(table);
   }
