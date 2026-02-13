@@ -3,7 +3,7 @@ import { z } from 'zod';
 // ベーススキーマ
 export const baseExampleSchema = z.object({
   field1: z.boolean().default(false),
-  field2: z.string(),
+  field2: z.string().min(1),
 });
 
 // 作成スキーマ（ベース + 追加フィールド）

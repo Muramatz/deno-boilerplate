@@ -1,4 +1,4 @@
-import type { CreateExample } from './schema.ts';
+import type { CreateExample, UpdateExample } from './schema.ts';
 import { ConflictError, NotFoundError } from '@/lib/errors.ts';
 import { ExampleRepository } from './repository.ts';
 
@@ -15,7 +15,7 @@ export const ExampleService = {
     return record;
   },
 
-  async update(id: string, data: Partial<CreateExample>) {
+  async update(id: string, data: UpdateExample) {
     const record = await ExampleRepository.update(id, data);
     if (!record) throw new NotFoundError('データが見つかりません');
     return record;
