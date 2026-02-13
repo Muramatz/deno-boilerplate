@@ -1,0 +1,9 @@
+{
+  "name": "@app/shared",
+  "version": "0.0.0",
+  "exports": "./src/index.ts",
+  "tasks": {
+    "check": "deno check src/**/*.ts",
+    "test": "deno test src/"
+  }
+}
