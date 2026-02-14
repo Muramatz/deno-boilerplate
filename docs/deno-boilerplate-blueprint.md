@@ -17,6 +17,7 @@
 8. [フロントエンド←→バックエンド型安全RPC接続](#8-フロントエンドバックエンド型安全rpc接続)
 9. [Feature-Based Architecture ルール](#9-feature-based-architecture-ルール)
 10. [命名規約・コード規約](#10-命名規約コード規約)
+11. [デプロイ（Deno Deploy）](#11-デプロイdeno-deploy)
 
 ---
 
@@ -2075,6 +2076,150 @@ export { examples } from './table.ts';
 - [ ] `deno task dev` — API + Web 同時起動
 - [ ] `deno run -A npm:vite build`（web）— ビルド成功
 - [ ] API → Web の型安全RPC接続確認
+
+---
+
+## 11. デプロイ（Deno Deploy）
+
+### 11.1 デプロイ構成
+
+本ボイラープレートは **単一デプロイメント構成** を採用。Hono API が API ルート (`/api/*`) と
+Vite ビルド出力（SPA）の両方を配信する。
+
+```text
+[Deno Deploy]
+  packages/api/src/index.ts (エントリポイント)
+    └── app.ts
+         ├── /api/* → API ルート (JSON)
+         ├── /assets/* → serveStatic (Vite ビルド出力)
+         └── /* → SPA フォールバック (index.html)
+```
+
+**メリット:**
+
+- API と SPA が同一オリジン（CORS 不要）
+- Deno Deploy 1プロジェクトで完結
+- フロントエンドの API URL 設定が不要（相対パス `/api/*`）
+
+### 11.2 静的ファイル配信
+
+`app.ts` で本番環境のみ `serveStatic`（`hono/deno`）を登録:
+
+```typescript
+import { serveStatic } from 'hono/deno';
+
+if (!isDevelopment) {
+  const staticDir = Deno.env.get('STATIC_DIR') || './packages/web/dist';
+  app.use('*', serveStatic({ root: staticDir }));
+  app.get('*', async (c, next) => {
+    if (c.req.path.startsWith('/api')) return next();
+    return serveStatic({ root: staticDir, path: 'index.html' })(c, next);
+  });
+}
+```
+
+- `DENO_ENV=production` で有効化（開発時は Vite dev サーバーが配信）
+- `/api/*` リクエストは SPA フォールバックをスキップし、JSON 404 を返す
+- `STATIC_DIR` 環境変数でパスを上書き可能（デフォルト: `./packages/web/dist`）
+
+### 11.3 環境変数（Deno Deploy ダッシュボード）
+
+| 変数 | 値 | 説明 |
+| --- | --- | --- |
+| `DATABASE_URL` | `postgresql://...@....neon.tech/app_db?sslmode=require` | Neon 接続文字列 |
+| `DENO_ENV` | `production` | 本番モード（CORS無効化 + 静的ファイル配信有効化） |
+| `JWT_SECRET` | (ランダム文字列) | JWT 署名用シークレット |
+
+`@std/dotenv/load` は Deno Deploy 上で安全に no-op となる（`Deno.readTextFileSync` が
+利用不可のため）。環境変数はダッシュボードで設定する。
+
+### 11.4 ビルド＆プレビュー
+
+```bash
+# Web ビルド（デプロイ前に必須）
+deno task build:web
+
+# ローカルで本番構成を検証
+deno task deploy:preview
+# → http://localhost:3000 でSPA + API を確認
+```
+
+### 11.5 CI/CD（GitHub Actions）
+
+2つのワークフローを用意:
+
+| ファイル | トリガー | ジョブ |
+| --- | --- | --- |
+| `.github/workflows/ci.yml` | PR → main | lint, fmt, typecheck, test, build |
+| `.github/workflows/deploy.yml` | push → main | lint, fmt, typecheck, test → deploy |
+
+**CI ワークフロー** (`ci.yml`) — PR 時に品質チェック:
+
+```text
+lint-and-format ─┐
+typecheck ───────┤  (並列実行)
+test-api ────────┤
+build-web ───────┘
+```
+
+**Deploy ワークフロー** (`deploy.yml`) — main マージ時に CI + デプロイ:
+
+```text
+lint-and-format ─┐
+typecheck ───────┼─→ deploy (Deno Deploy)
+test-api ────────┘
+```
+
+deploy ジョブは CI ジョブが全て成功した後に実行。Web ビルドは deploy ジョブ内で実行する。
+
+### 11.6 Deno Deploy 初期セットアップ
+
+デプロイ前に以下の設定が必要:
+
+#### 1. Deno Deploy プロジェクト作成
+
+1. [dash.deno.com](https://dash.deno.com) にアクセス
+2. 「New Project」→ プロジェクト名を入力（`deploy.yml` の `project` に一致させる）
+3. 「Deploy from GitHub Actions」を選択
+4. GitHub リポジトリをリンク
+
+#### 2. 環境変数設定（Deno Deploy ダッシュボード）
+
+プロジェクトの Settings → Environment Variables で以下を設定:
+
+| 変数 | 値 | 必須 |
+| --- | --- | --- |
+| `DATABASE_URL` | `postgresql://...@....neon.tech/app_db?sslmode=require` | Yes |
+| `DENO_ENV` | `production` | Yes |
+| `JWT_SECRET` | (ランダム文字列) | Yes |
+
+#### 3. GitHub リポジトリ設定
+
+GitHub リポジトリの Settings → Secrets and variables → Actions → **Variables** タブで以下を設定:
+
+| Variable | 値 | 説明 |
+| --- | --- | --- |
+| `DENO_DEPLOY_PROJECT` | Deno Deploy のプロジェクト名 | `deploy.yml` が `${{ vars.DENO_DEPLOY_PROJECT }}` で参照 |
+
+認証は OIDC（OpenID Connect）で自動的に行われるため **Secrets の設定は不要**。
+
+必要な Actions パーミッション（ワークフロー内で設定済み）:
+
+```yaml
+permissions:
+  id-token: write   # OIDC 認証に必要
+  contents: read     # チェックアウトに必要
+```
+
+### 11.7 deployctl パラメータ
+
+| パラメータ | 値 | 説明 |
+| --- | --- | --- |
+| `project` | `${{ vars.DENO_DEPLOY_PROJECT }}` | GitHub Variables から読み取り |
+| `entrypoint` | `packages/api/src/index.ts` | Hono API エントリポイント |
+| `root` | `.` | モノレポルート（パス解決のため） |
+| `include` | `packages/api,packages/web/dist,deno.json,deno.lock` | デプロイに含めるファイル |
+| `exclude` | `node_modules,...` | デプロイから除外するファイル |
 
 ---
 

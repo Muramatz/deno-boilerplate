@@ -39,6 +39,10 @@ deno task --filter '@app/api' db:studio     # Drizzle Studio
 
 # Build
 deno task --filter '@app/web' build
+
+# Deploy
+deno task build:web              # Build web (required before deploy)
+deno task deploy:preview         # Local production preview (http://localhost:3000)
 ```
 
 To run a single test file: `deno test --allow-net --allow-env --allow-read --allow-write --allow-sys --allow-ffi packages/api/src/features/example/__tests__/repository.test.ts`
@@ -77,6 +81,17 @@ features/<name>/
 
 State: TanStack Query (server), Zustand (UI), react-hook-form (forms).
 
+### Deploy (Deno Deploy)
+
+Single deployment: API serves both `/api/*` routes (JSON) and Vite SPA build output (static files + `index.html` fallback). In production (`DENO_ENV=production`), `serveStatic` from `hono/deno` serves `packages/web/dist/`. CORS is disabled in production (same-origin). Entrypoint: `packages/api/src/index.ts`.
+
+### CI/CD (GitHub Actions)
+
+- `.github/workflows/ci.yml` — PR: lint, fmt, typecheck, test, build (parallel)
+- `.github/workflows/deploy.yml` — Push to main: CI checks → deploy to Deno Deploy
+- Auth: OIDC (no GitHub secrets needed). Set env vars in Deno Deploy dashboard
+- Set GitHub repo variable `DENO_DEPLOY_PROJECT` to your Deno Deploy project name (Settings → Variables)
+
 ## Key Conventions
 
 - **All imports require `.ts`/`.tsx` extensions** — `import { foo } from './bar.ts'` not `'./bar'`
@@ -109,3 +124,6 @@ State: TanStack Query (server), Zustand (UI), react-hook-form (forms).
 - **`@hono/zod-openapi@1.x`** requires Zod v4 as a peer dependency
 - **Neon HTTP driver** is stateless (no connection pool) — ideal for Deno Deploy but `DATABASE_URL` must contain `neon.tech` for auto-detection
 - **drizzle-kit migrations** always use postgres.js (TCP) regardless of runtime driver — point `DATABASE_URL` to Neon's standard connection string (not pooled) for production migrations
+- **`@std/dotenv/load`** safely no-ops on Deno Deploy (no `.env` file). Set env vars via the Deploy dashboard
+- **`Deno.serve()` port/hostname** are ignored on Deno Deploy — the platform manages networking
+- **Static file serving** (`serveStatic`) is production-only (`DENO_ENV=production`). In development, Vite dev server handles static files and proxies `/api` to the API
