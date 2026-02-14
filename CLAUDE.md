@@ -5,10 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 Deno 2.6+ monorepo boilerplate with API-first design. Two workspace members under `packages/`:
-- **@app/api** — Hono + Drizzle ORM + Zod v4 + OpenAPI (PostgreSQL)
+- **@app/api** — Hono + Drizzle ORM + Zod v4 + OpenAPI (Neon PostgreSQL / local PostgreSQL)
 - **@app/web** — React 19 + Vite 7 + TanStack Query + Tailwind CSS v4
 
-Blueprint doc (Japanese): `docs/deno-boilerplate-blueprint.md`
+Deploy target: **Deno Deploy**. DB: **Neon** (serverless PostgreSQL). Blueprint doc (Japanese): `docs/deno-boilerplate-blueprint.md`
 
 ## Commands
 
@@ -32,7 +32,7 @@ deno fmt --check
 deno task --filter '@app/api' check
 deno task --filter '@app/web' check
 
-# Database (PostgreSQL via compose.yml)
+# Database (local: PostgreSQL via compose.yml, production: Neon)
 deno task --filter '@app/api' db:generate   # Create migrations
 deno task --filter '@app/api' db:migrate    # Apply migrations
 deno task --filter '@app/api' db:studio     # Drizzle Studio
@@ -87,6 +87,7 @@ State: TanStack Query (server), Zustand (UI), react-hook-form (forms).
 - **Zod v4 specifics:** `z.iso.date()` replaces `z.string().date()`, `.partial()` preserves `.default()` values
 - **Zod form types:** `z.input<typeof schema>` for react-hook-form (input type with defaults), `z.infer<typeof schema>` for output type
 - **Error classes:** `AppError`, `NotFoundError`, `ConflictError`, `ValidationError` in `src/lib/errors.ts`
+- **DB driver switching:** `DATABASE_URL` containing `neon.tech` → `drizzle-orm/neon-http` (HTTP), otherwise → `drizzle-orm/postgres-js` (TCP). Auto-detected in `src/db/index.ts`
 
 ## Testing
 
@@ -106,3 +107,5 @@ State: TanStack Query (server), Zustand (UI), react-hook-form (forms).
 - **Deno + React JSX** needs both `"react/": "npm:/react@^19.2/"` subpath AND `"jsxImportSource": "react"` in compilerOptions
 - **drizzle-kit** runs on Node, can't resolve `@/` aliases — `drizzle.config.ts` uses relative paths
 - **`@hono/zod-openapi@1.x`** requires Zod v4 as a peer dependency
+- **Neon HTTP driver** is stateless (no connection pool) — ideal for Deno Deploy but `DATABASE_URL` must contain `neon.tech` for auto-detection
+- **drizzle-kit migrations** always use postgres.js (TCP) regardless of runtime driver — point `DATABASE_URL` to Neon's standard connection string (not pooled) for production migrations

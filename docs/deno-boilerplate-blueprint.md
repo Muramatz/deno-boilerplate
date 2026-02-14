@@ -36,7 +36,8 @@
 | **バックエンド**              | Hono                                  | ^4.11        | 軽量 Web フレームワーク                                                                                                     |
 | **OpenAPI**                   | @hono/zod-openapi                     | ^1.2         | Zodスキーマから自動ドキュメント生成                                                                                         |
 | **ORM**                       | Drizzle ORM                           | ^0.45        | 型安全なDB操作                                                                                                              |
-| **DBドライバ**                | postgres (postgres.js)                | ^3.4         | PostgreSQL接続                                                                                                              |
+| **DBドライバ(本番)**          | @neondatabase/serverless              | ^1.0         | Neon HTTP接続（Deno Deploy向けサーバーレスドライバ）                                                                        |
+| **DBドライバ(ローカル)**      | postgres (postgres.js)                | ^3.4         | ローカル開発用PostgreSQL TCP接続                                                                                            |
 | **バリデーション**            | Zod                                   | ^4.0         | フロント・バック共有スキーマ（※@hono/zod-openapi v1.xはZod v4必須。v4では`.partial()`でも`.default()`が保持される点に注意） |
 | **ロギング**                  | @logtape/logtape                      | ^0.10        | 構造化ログ（マルチランタイム対応）                                                                                          |
 | **Lint/Format**               | deno lint / deno fmt                  | Deno組み込み | Linter + Formatter                                                                                                          |
@@ -234,7 +235,10 @@ volumes:
 
 ```bash
 # Database
+# Local development (Docker PostgreSQL)
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/<project_db_name>
+# Production (Neon — URL に neon.tech を含むと自動で serverless HTTP driver を使用)
+# DATABASE_URL=postgresql://user:pass@ep-xxx-yyy-123.us-east-2.aws.neon.tech/dbname?sslmode=require
 
 # API Server
 API_PORT=3000
@@ -254,7 +258,11 @@ CORS_ORIGINS=http://localhost:5173
 DENO_ENV=development
 ```
 
-**ポイント:** `NODE_ENV` → `DENO_ENV` に変更。
+**ポイント:**
+
+- `NODE_ENV` → `DENO_ENV` に変更
+- `DATABASE_URL` に `neon.tech` を含む場合、API は自動で Neon HTTP ドライバを使用
+- ローカル開発では Docker PostgreSQL の接続文字列をそのまま使用
 
 ---
 
@@ -437,6 +445,7 @@ export const EXAMPLE_STATUS_IDS = EXAMPLE_STATUSES.map((s) => s.id);
     "hono": "npm:hono@^4.11",
     "drizzle-orm": "npm:drizzle-orm@^0.45",
     "drizzle-orm/": "npm:/drizzle-orm@^0.45/",
+    "@neondatabase/serverless": "npm:@neondatabase/serverless@^1.0",
     "postgres": "npm:postgres@^3.4",
     "date-fns": "npm:date-fns@^4.1",
     "@logtape/logtape": "jsr:@logtape/logtape@^0.10",
@@ -472,6 +481,9 @@ export const EXAMPLE_STATUS_IDS = EXAMPLE_STATUSES.map((s) => s.id);
 - `drizzle-orm/` のサブパスインポート用エントリも明示
 - `drizzle-kit` を import map に含める（`drizzle.config.ts` の
   `import { defineConfig } from 'drizzle-kit'` をDenoが解決するため）
+- `@neondatabase/serverless` — Deno Deploy 向け Neon HTTP ドライバ。`drizzle-orm/neon-http`
+  が内部で使用。`DATABASE_URL` に `neon.tech` を含む場合に自動選択される
+- `postgres` は引き続きローカル開発用に保持（Docker PostgreSQL への TCP 接続）
 
 ### 4.2 ディレクトリ構造
 
@@ -698,16 +710,31 @@ export class ValidationError extends AppError {
 ### 4.7 DB接続（src/db/index.ts）
 
 ```typescript
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import * as schema from './tables.ts';
 
 const connectionString = Deno.env.get('DATABASE_URL') ||
   'postgresql://postgres:postgres@localhost:5432/<db_name>';
 
-const client = postgres(connectionString);
-export let db = drizzle(client, { schema });
-export type Database = typeof db;
+/**
+ * Neon (Deno Deploy) → drizzle-orm/neon-http (HTTP, ステートレス)
+ * ローカル開発        → drizzle-orm/postgres-js (TCP)
+ */
+const isNeon = connectionString.includes('neon.tech');
+
+export type Database = NeonHttpDatabase<typeof schema>;
+
+let _db: Database;
+
+if (isNeon) {
+  const { drizzle } = await import('drizzle-orm/neon-http');
+  _db = drizzle(connectionString, { schema });
+} else {
+  const { drizzle } = await import('drizzle-orm/postgres-js');
+  _db = drizzle(connectionString, { schema }) as unknown as Database;
+}
+
+export let db: Database = _db;
 
 /** テスト用: DBインスタンスを差し替える（ESM live binding経由で全モジュールに反映） */
 export function setDb(newDb: Database) {
@@ -717,10 +744,15 @@ export function setDb(newDb: Database) {
 
 **ポイント:**
 
-- `export let db` にすることで、ESM live binding により `setDb()`
-  の変更が全インポート先に即時反映される
+- **環境自動判別:** `DATABASE_URL` に `neon.tech` を含む場合は Neon HTTP ドライバ、それ以外は
+  postgres.js（TCP）を使用。Deno の top-level await で動的 import を実現
+- **Neon HTTP ドライバ (`drizzle-orm/neon-http`):** 各クエリが独立した HTTP リクエスト。コネクション
+  プール管理不要でサーバーレス環境（Deno Deploy）に最適
+- **postgres.js:** ローカル開発時は従来通り TCP 接続。Docker Compose の PostgreSQL に直結
+- `export let db` により ESM live binding で `setDb()` の変更が全インポート先に即時反映
 - テスト時は PGLite インスタンスを `setDb()` で注入し、本番コードを一切変更せずにテスト可能
-- `vi.mock` のようなモジュールモックが不要なシンプルな依存注入パターン
+- `Database` 型は `NeonHttpDatabase<typeof schema>` で統一。ローカル開発・テストでは型キャストで
+  互換性を維持（ランタイム API は同一）
 
 ### 4.8 DBテーブル集約（src/db/tables.ts）
 

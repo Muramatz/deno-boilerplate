@@ -11,6 +11,7 @@
     "hono": "npm:hono@^4.11",
     "drizzle-orm": "npm:drizzle-orm@^0.45",
     "drizzle-orm/": "npm:/drizzle-orm@^0.45/",
+    "@neondatabase/serverless": "npm:@neondatabase/serverless@^1.0",
     "postgres": "npm:postgres@^3.4",
     "date-fns": "npm:date-fns@^4.1",
     "@logtape/logtape": "jsr:@logtape/logtape@^0.10",
