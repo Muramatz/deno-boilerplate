@@ -2,18 +2,17 @@
   "version": "5",
   "specifiers": {
     "jsr:@logtape/logtape@0.10": "0.10.0",
-    "jsr:@std/assert@1": "1.0.18",
     "jsr:@std/assert@^1.0.14": "1.0.18",
     "jsr:@std/assert@^1.0.17": "1.0.18",
-    "jsr:@std/async@^1.1.0": "1.1.1",
+    "jsr:@std/assert@^1.0.18": "1.0.18",
     "jsr:@std/data-structures@^1.0.10": "1.0.10",
-    "jsr:@std/dotenv@0.225": "0.225.6",
-    "jsr:@std/expect@1": "1.0.17",
+    "jsr:@std/dotenv@~0.225.6": "0.225.6",
+    "jsr:@std/expect@^1.0.17": "1.0.17",
     "jsr:@std/fs@^1.0.22": "1.0.22",
     "jsr:@std/internal@^1.0.10": "1.0.12",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@^1.1.4": "1.1.4",
-    "jsr:@std/testing@1": "1.0.17",
+    "jsr:@std/testing@^1.0.17": "1.0.17",
     "npm:@electric-sql/pglite@0.3": "0.3.15",
     "npm:@hono/swagger-ui@0.5": "0.5.3_hono@4.11.9",
     "npm:@hono/zod-openapi@^1.2.0": "1.2.1_hono@4.11.9_zod@4.3.6",
@@ -42,7 +41,7 @@
     "npm:tailwindcss@^4.1.0": "4.1.18",
     "npm:vite@*": "7.3.1_picomatch@4.0.3",
     "npm:vite@^7.3.0": "7.3.1_picomatch@4.0.3",
-    "npm:zod@4": "4.3.6",
+    "npm:zod@^4.3.6": "4.3.6",
     "npm:zustand@5": "5.0.11_@types+react@19.2.14_react@19.2.4"
   },
   "jsr": {
@@ -54,9 +53,6 @@
       "dependencies": [
         "jsr:@std/internal@^1.0.12"
       ]
-    },
-    "@std/async@1.1.1": {
-      "integrity": "8a79beb3378cc229ce65ba2c746cfd03e4855ddd891d1eb6b9e32128e0d5339c"
     },
     "@std/data-structures@1.0.10": {
       "integrity": "f574f86b0e07c69b9edc555fcc814b57d29258bad39fd5a34ba8a80ecf033cfe"
@@ -90,7 +86,6 @@
       "integrity": "87bdc2700fa98249d48a17cd72413352d3d3680dcfbdb64947fd0982d6bbf681",
       "dependencies": [
         "jsr:@std/assert@^1.0.17",
-        "jsr:@std/async",
         "jsr:@std/data-structures",
         "jsr:@std/fs",
         "jsr:@std/internal@^1.0.12",
@@ -2006,11 +2001,11 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/assert@1",
-      "jsr:@std/dotenv@0.225",
-      "jsr:@std/expect@1",
-      "jsr:@std/testing@1",
-      "npm:zod@4"
+      "jsr:@std/assert@^1.0.18",
+      "jsr:@std/dotenv@~0.225.6",
+      "jsr:@std/expect@^1.0.17",
+      "jsr:@std/testing@^1.0.17",
+      "npm:zod@^4.3.6"
     ],
     "members": {
       "packages/api": {
