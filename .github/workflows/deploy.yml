@@ -54,7 +54,7 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: ${{ vars.DENO_DEPLOY_PROJECT }}
-          entrypoint: "packages/api/src/index.ts"
-          root: "."
-          include: "packages/api,packages/web/dist,deno.json,deno.lock"
-          exclude: "node_modules,packages/web/src,packages/web/node_modules,.claude,docs"
+          entrypoint: 'packages/api/src/index.ts'
+          root: '.'
+          include: 'packages/api,packages/web/dist,deno.json,deno.lock'
+          exclude: 'node_modules,packages/web/src,packages/web/node_modules,.claude,docs'

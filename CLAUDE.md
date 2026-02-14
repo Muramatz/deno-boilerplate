@@ -1,14 +1,17 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository.
 
 ## Project Overview
 
 Deno 2.6+ monorepo boilerplate with API-first design. Two workspace members under `packages/`:
+
 - **@app/api** — Hono + Drizzle ORM + Zod v4 + OpenAPI (Neon PostgreSQL / local PostgreSQL)
 - **@app/web** — React 19 + Vite 7 + TanStack Query + Tailwind CSS v4
 
-Deploy target: **Deno Deploy**. DB: **Neon** (serverless PostgreSQL). Blueprint doc (Japanese): `docs/deno-boilerplate-blueprint.md`
+Deploy target: **Deno Deploy**. DB: **Neon** (serverless PostgreSQL). Blueprint doc (Japanese):
+`docs/deno-boilerplate-blueprint.md`
 
 ## Commands
 
@@ -45,7 +48,8 @@ deno task build:web              # Build web (required before deploy)
 deno task deploy:preview         # Local production preview (http://localhost:3000)
 ```
 
-To run a single test file: `deno test --allow-net --allow-env --allow-read --allow-write --allow-sys --allow-ffi packages/api/src/features/example/__tests__/repository.test.ts`
+To run a single test file:
+`deno test --allow-net --allow-env --allow-read --allow-write --allow-sys --allow-ffi packages/api/src/features/example/__tests__/repository.test.ts`
 
 ## Architecture
 
@@ -66,9 +70,11 @@ Import direction: `routes → service → repository → table`, `openapi` uses 
 
 ### Type-Safe Frontend ↔ Backend
 
-The API exports its route types via `AppType` in `src/app.ts`. The web package consumes them with Hono's RPC client (`hc<AppType>`) for fully type-safe API calls with IDE autocomplete.
+The API exports its route types via `AppType` in `src/app.ts`. The web package consumes them with
+Hono's RPC client (`hc<AppType>`) for fully type-safe API calls with IDE autocomplete.
 
-Schemas are shared via the `@app/api/schemas` subpath export. The web package uses these Zod schemas with react-hook-form + zodResolver.
+Schemas are shared via the `@app/api/schemas` subpath export. The web package uses these Zod schemas
+with react-hook-form + zodResolver.
 
 ### Web Feature Structure
 
@@ -83,14 +89,18 @@ State: TanStack Query (server), Zustand (UI), react-hook-form (forms).
 
 ### Deploy (Deno Deploy)
 
-Single deployment: API serves both `/api/*` routes (JSON) and Vite SPA build output (static files + `index.html` fallback). In production (`DENO_ENV=production`), `serveStatic` from `hono/deno` serves `packages/web/dist/`. CORS is disabled in production (same-origin). Entrypoint: `packages/api/src/index.ts`.
+Single deployment: API serves both `/api/*` routes (JSON) and Vite SPA build output (static files +
+`index.html` fallback). In production (`DENO_ENV=production`), `serveStatic` from `hono/deno` serves
+`packages/web/dist/`. CORS is disabled in production (same-origin). Entrypoint:
+`packages/api/src/index.ts`.
 
 ### CI/CD (GitHub Actions)
 
 - `.github/workflows/ci.yml` — PR: lint, fmt, typecheck, test, build (parallel)
 - `.github/workflows/deploy.yml` — Push to main: CI checks → deploy to Deno Deploy
 - Auth: OIDC (no GitHub secrets needed). Set env vars in Deno Deploy dashboard
-- Set GitHub repo variable `DENO_DEPLOY_PROJECT` to your Deno Deploy project name (Settings → Variables)
+- Set GitHub repo variable `DENO_DEPLOY_PROJECT` to your Deno Deploy project name (Settings →
+  Variables)
 
 ## Key Conventions
 
@@ -99,10 +109,14 @@ Single deployment: API serves both `/api/*` routes (JSON) and Vite SPA build out
 - **Directory naming:** kebab-case. **Code:** camelCase functions/vars, PascalCase types/components
 - **Drizzle dates:** Use `mode: 'string'` (YYYY-MM-DD), not `mode: 'date'`
 - **Drizzle timestamps:** `timestamp('col', { withTimezone: true })`
-- **Zod v4 specifics:** `z.iso.date()` replaces `z.string().date()`, `.partial()` preserves `.default()` values
-- **Zod form types:** `z.input<typeof schema>` for react-hook-form (input type with defaults), `z.infer<typeof schema>` for output type
-- **Error classes:** `AppError`, `NotFoundError`, `ConflictError`, `ValidationError` in `src/lib/errors.ts`
-- **DB driver switching:** `DATABASE_URL` containing `neon.tech` → `drizzle-orm/neon-http` (HTTP), otherwise → `drizzle-orm/postgres-js` (TCP). Auto-detected in `src/db/index.ts`
+- **Zod v4 specifics:** `z.iso.date()` replaces `z.string().date()`, `.partial()` preserves
+  `.default()` values
+- **Zod form types:** `z.input<typeof schema>` for react-hook-form (input type with defaults),
+  `z.infer<typeof schema>` for output type
+- **Error classes:** `AppError`, `NotFoundError`, `ConflictError`, `ValidationError` in
+  `src/lib/errors.ts`
+- **DB driver switching:** `DATABASE_URL` containing `neon.tech` → `drizzle-orm/neon-http` (HTTP),
+  otherwise → `drizzle-orm/postgres-js` (TCP). Auto-detected in `src/db/index.ts`
 
 ## Testing
 
@@ -116,14 +130,21 @@ Single deployment: API serves both `/api/*` routes (JSON) and Vite SPA build out
 
 - **`nodeModulesDir`** must be in root `deno.json`, not in member packages
 - **`deno task --recursive`** also runs root tasks — causes infinite loops. Use `--filter` instead
-- **`deno test packages/`** runs tests 3x (once per workspace member). Always use `deno task --filter '<pkg>' test`
-- **Vite cannot resolve Deno workspace subpath exports** — requires explicit `resolve.alias` in `vite.config.ts`
+- **`deno test packages/`** runs tests 3x (once per workspace member). Always use
+  `deno task --filter '<pkg>' test`
+- **Vite cannot resolve Deno workspace subpath exports** — requires explicit `resolve.alias` in
+  `vite.config.ts`
 - **React 19** ships no `.d.ts` types — `@types/react` is required separately
-- **Deno + React JSX** needs both `"react/": "npm:/react@^19.2/"` subpath AND `"jsxImportSource": "react"` in compilerOptions
+- **Deno + React JSX** needs both `"react/": "npm:/react@^19.2/"` subpath AND
+  `"jsxImportSource": "react"` in compilerOptions
 - **drizzle-kit** runs on Node, can't resolve `@/` aliases — `drizzle.config.ts` uses relative paths
 - **`@hono/zod-openapi@1.x`** requires Zod v4 as a peer dependency
-- **Neon HTTP driver** is stateless (no connection pool) — ideal for Deno Deploy but `DATABASE_URL` must contain `neon.tech` for auto-detection
-- **drizzle-kit migrations** always use postgres.js (TCP) regardless of runtime driver — point `DATABASE_URL` to Neon's standard connection string (not pooled) for production migrations
-- **`@std/dotenv/load`** safely no-ops on Deno Deploy (no `.env` file). Set env vars via the Deploy dashboard
+- **Neon HTTP driver** is stateless (no connection pool) — ideal for Deno Deploy but `DATABASE_URL`
+  must contain `neon.tech` for auto-detection
+- **drizzle-kit migrations** always use postgres.js (TCP) regardless of runtime driver — point
+  `DATABASE_URL` to Neon's standard connection string (not pooled) for production migrations
+- **`@std/dotenv/load`** safely no-ops on Deno Deploy (no `.env` file). Set env vars via the Deploy
+  dashboard
 - **`Deno.serve()` port/hostname** are ignored on Deno Deploy — the platform manages networking
-- **Static file serving** (`serveStatic`) is production-only (`DENO_ENV=production`). In development, Vite dev server handles static files and proxies `/api` to the API
+- **Static file serving** (`serveStatic`) is production-only (`DENO_ENV=production`). In
+  development, Vite dev server handles static files and proxies `/api` to the API
