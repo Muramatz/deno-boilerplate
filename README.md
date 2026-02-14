@@ -7,15 +7,11 @@
   &nbsp;&nbsp;
   <img src="https://raw.githubusercontent.com/drizzle-team/drizzle-orm/main/misc/readme/logo-github-sq-dark.svg" alt="Drizzle" height="48" />
   &nbsp;&nbsp;
-  <img src="https://github.com/colinhacks/zod/raw/main/logo.svg" alt="Zod" height="48" />
-  &nbsp;&nbsp;
   <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg" alt="React" height="48" />
   &nbsp;&nbsp;
   <img src="https://vitejs.dev/logo.svg" alt="Vite" height="48" />
   &nbsp;&nbsp;
   <img src="https://raw.githubusercontent.com/tailwindlabs/tailwindcss/HEAD/.github/logo-dark.svg" alt="Tailwind CSS" height="24" />
-  &nbsp;&nbsp;
-  <img src="https://neon.tech/favicon/favicon.svg" alt="Neon" height="48" />
 </p>
 
 <p align="center">
