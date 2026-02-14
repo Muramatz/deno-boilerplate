@@ -2150,27 +2150,29 @@ deno task deploy:preview
 
 | ファイル                       | トリガー    | ジョブ                              |
 | ------------------------------ | ----------- | ----------------------------------- |
-| `.github/workflows/ci.yml`     | PR → main   | lint, fmt, typecheck, test, build   |
-| `.github/workflows/deploy.yml` | push → main | lint, fmt, typecheck, test → deploy |
+| `.github/workflows/ci.yml`     | PR → main   | prepare → lint, fmt, typecheck, test, build |
+| `.github/workflows/deploy.yml` | push → main | prepare → lint, fmt, typecheck, test → deploy |
 
 **CI ワークフロー** (`ci.yml`) — PR 時に品質チェック:
 
 ```text
-lint-and-format ─┐
-typecheck ───────┤  (並列実行)
-test-api ────────┤
-build-web ───────┘
+prepare (deno install + upload artifact: deno-deps)
+  ├─ lint-and-format
+  ├─ typecheck
+  ├─ test-api
+  └─ build-web
 ```
 
 **Deploy ワークフロー** (`deploy.yml`) — main マージ時に CI + デプロイ:
 
 ```text
-lint-and-format ─┐
-typecheck ───────┼─→ deploy (Deno Deploy)
-test-api ────────┘
+prepare (deno install + upload artifact: deno-deps)
+  ├─ lint-and-format ─┐
+  ├─ typecheck ───────┼─→ deploy (build:web + Deno Deploy)
+  └─ test-api ────────┘
 ```
 
-deploy ジョブは CI ジョブが全て成功した後に実行。Web ビルドは deploy ジョブ内で実行する。
+`deno install` は `prepare` ジョブで1回のみ実行し、`node_modules` を artifact (`deno-deps`) として配布する。各ジョブは artifact をダウンロードして実行する。
 
 ### 11.6 Deno Deploy 初期セットアップ
 
