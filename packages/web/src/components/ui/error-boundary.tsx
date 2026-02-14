@@ -8,14 +8,15 @@ export function ErrorFallback({
   error,
   resetErrorBoundary,
 }: {
-  error: Error;
+  error: unknown;
   resetErrorBoundary: () => void;
 }) {
+  const message = error instanceof Error ? error.message : 'Unknown error';
   return (
     <div className='flex min-h-screen items-center justify-center'>
       <div className='text-center'>
         <h1 className='text-2xl font-bold text-red-600'>Something went wrong</h1>
-        <p className='mt-2 text-gray-600'>{error.message}</p>
+        <p className='mt-2 text-gray-600'>{message}</p>
         <div className='mt-4 flex justify-center gap-3'>
           <button
             type='button'

@@ -1,8 +1,11 @@
-import { http, HttpResponse } from 'msw';
+import { http } from 'msw';
 
 export const handlers = [
   // デフォルトで全API呼び出しを404にする（テストごとにオーバーライド）
   http.all('/api/*', () => {
-    return HttpResponse.json({ error: { message: 'Not mocked' } }, { status: 404 });
+    return new Response(JSON.stringify({ error: { message: 'Not mocked' } }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }),
 ];
