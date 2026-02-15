@@ -47,7 +47,10 @@
     "node_modules",
     "dist",
     "build",
-    ".claude"
+    ".claude",
+    "packages/api/.vite",
+    "packages/api/generated",
+    "**/*.md"
   ],
   "allowScripts": [
     "npm:esbuild@0.18.20",
