@@ -36,8 +36,8 @@ coverage/
 .cache/
 .vite/
 
-# Drizzle
-drizzle/meta/
+# Prisma (generated client)
+packages/api/generated/prisma/
 
 # Docker
 .docker/

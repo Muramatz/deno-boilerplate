@@ -7,11 +7,11 @@ repository.
 
 Deno 2.6+ monorepo boilerplate with API-first design. Two workspace members under `packages/`:
 
-- **@app/api** — Hono + Drizzle ORM + Zod v4 + OpenAPI (Neon PostgreSQL / local PostgreSQL)
+- **@app/api** — Hono + Prisma ORM 7 + Zod v4 + OpenAPI (Prisma Postgres / local PostgreSQL)
 - **@app/web** — React 19 + Vite 7 + TanStack Query + Tailwind CSS v4
 
-Deploy target: **Deno Deploy**. DB: **Neon** (serverless PostgreSQL). Blueprint doc (Japanese):
-`docs/deno-boilerplate-blueprint.md`
+Deploy target: **Deno Deploy**. DB: **Prisma Postgres** (serverless PostgreSQL). Blueprint doc
+(Japanese): `docs/deno-boilerplate-blueprint.md`
 
 ## Commands
 
@@ -35,10 +35,13 @@ deno fmt --check
 deno task --filter '@app/api' check
 deno task --filter '@app/web' check
 
-# Database (local: PostgreSQL via compose.yml, production: Neon)
-deno task --filter '@app/api' db:generate   # Create migrations
-deno task --filter '@app/api' db:migrate    # Apply migrations
-deno task --filter '@app/api' db:studio     # Drizzle Studio
+# Database (local: PostgreSQL via compose.yml, production: Prisma Postgres)
+deno task --filter '@app/api' db:generate   # Generate Prisma Client
+deno task --filter '@app/api' db:migrate    # Create & apply migrations
+deno task --filter '@app/api' db:deploy     # Apply pending migrations (CI/prod)
+deno task --filter '@app/api' db:push       # Push schema to dev DB (.env)
+deno task --filter '@app/api' db:push:test  # Push schema to test DB (app_test)
+deno task --filter '@app/api' db:studio     # Prisma Studio
 
 # Build
 deno task --filter '@app/web' build
@@ -58,15 +61,15 @@ To run a single test file:
 Each feature in `packages/api/src/features/<name>/` follows:
 
 ```
-table.ts       → Drizzle table definition (snake_case columns → camelCase TS)
 schema.ts      → Pure Zod validation schemas (shared via @app/api/schemas export)
 openapi.ts     → Zod schemas with OpenAPI metadata + response formatting
-repository.ts  → Data access layer (Drizzle CRUD, returns null on not-found)
+repository.ts  → Data access layer (Prisma Client CRUD, returns null on not-found)
 service.ts     → Business logic, validation, throws AppError subclasses
 routes.ts      → OpenAPIHono route handlers, validates input, calls service
 ```
 
-Import direction: `routes → service → repository → table`, `openapi` uses `schema.ts`.
+DB schema is defined in `packages/api/prisma/schema.prisma` (single source of truth). Import
+direction: `routes → service → repository`, `openapi` uses `schema.ts`.
 
 ### Type-Safe Frontend ↔ Backend
 
@@ -98,6 +101,8 @@ Single deployment: API serves both `/api/*` routes (JSON) and Vite SPA build out
 
 - `.github/workflows/ci.yml` — PR: lint, fmt, typecheck, test, build (parallel)
 - `.github/workflows/deploy.yml` — Push to main: CI checks → deploy to Deno Deploy
+- `prepare` job generates Prisma Client and includes `packages/api/generated` in artifact
+- `test-api` job runs PostgreSQL service container (`app_test` DB), pushes schema, runs tests
 - Auth: OIDC (no GitHub secrets needed). Set env vars in Deno Deploy dashboard
 - Set GitHub repo variable `DENO_DEPLOY_PROJECT` to your Deno Deploy project name (Settings →
   Variables)
@@ -107,21 +112,28 @@ Single deployment: API serves both `/api/*` routes (JSON) and Vite SPA build out
 - **All imports require `.ts`/`.tsx` extensions** — `import { foo } from './bar.ts'` not `'./bar'`
 - **Formatting:** semicolons, single quotes, 2-space indent, 100-char line width
 - **Directory naming:** kebab-case. **Code:** camelCase functions/vars, PascalCase types/components
-- **Drizzle dates:** Use `mode: 'string'` (YYYY-MM-DD), not `mode: 'date'`
-- **Drizzle timestamps:** `timestamp('col', { withTimezone: true })`
+- **Prisma dates:** `DateTime @db.Date` returns JS `Date` — repository converts to/from `YYYY-MM-DD`
+  string via `toDate()`/`toRecord()` helpers
+- **Prisma timestamps:** `DateTime @db.Timestamptz` with `@default(now())` and `@updatedAt`
 - **Zod v4 specifics:** `z.iso.date()` replaces `z.string().date()`, `.partial()` preserves
   `.default()` values
 - **Zod form types:** `z.input<typeof schema>` for react-hook-form (input type with defaults),
   `z.infer<typeof schema>` for output type
 - **Error classes:** `AppError`, `NotFoundError`, `ConflictError`, `ValidationError` in
   `src/lib/errors.ts`
-- **DB driver switching:** `DATABASE_URL` containing `neon.tech` → `drizzle-orm/neon-http` (HTTP),
-  otherwise → `drizzle-orm/postgres-js` (TCP). Auto-detected in `src/db/index.ts`
+- **Prisma driver adapter:** `@prisma/adapter-pg` (TCP via `pg`) used in `src/db/index.ts`. For
+  Prisma Postgres, set `DATABASE_URL` to `prisma+postgres://...` connection string
+- **Prisma generated client:** Located at `packages/api/generated/prisma/` (gitignored). Run
+  `db:generate` after schema changes
 
 ## Testing
 
-- **Backend tests** use PGLite (in-memory PostgreSQL WASM) — no running DB needed
-- Test setup: `useTestDb()` helper handles PGLite init, table cleanup between tests, and teardown
+- **Backend tests** require PostgreSQL running (`docker compose up -d`). Test DB: `app_test`
+- Test setup: `useTestDb()` helper creates Prisma client, injects via `setPrisma()`, truncates
+  tables between tests, disconnects after
+- `TEST_DATABASE_URL` env var (default: `postgresql://postgres:postgres@localhost:5432/app_test`)
+- Schema must be pushed before first test run:
+  `deno task --filter '@app/api' db:push:test`
 - BDD style via `@std/testing/bdd` (`describe`, `it`) + `@std/expect`
 - Service tests use mock repositories; route tests use `app.request()` (no HTTP server)
 - **Frontend tests** use MSW for API mocking, `@testing-library/react`, jsdom
@@ -137,12 +149,15 @@ Single deployment: API serves both `/api/*` routes (JSON) and Vite SPA build out
 - **React 19** ships no `.d.ts` types — `@types/react` is required separately
 - **Deno + React JSX** needs both `"react/": "npm:/react@^19.2/"` subpath AND
   `"jsxImportSource": "react"` in compilerOptions
-- **drizzle-kit** runs on Node, can't resolve `@/` aliases — `drizzle.config.ts` uses relative paths
 - **`@hono/zod-openapi@1.x`** requires Zod v4 as a peer dependency
-- **Neon HTTP driver** is stateless (no connection pool) — ideal for Deno Deploy but `DATABASE_URL`
-  must contain `neon.tech` for auto-detection
-- **drizzle-kit migrations** always use postgres.js (TCP) regardless of runtime driver — point
-  `DATABASE_URL` to Neon's standard connection string (not pooled) for production migrations
+- **Prisma `DateTime @db.Date`** returns JS `Date` objects, NOT strings. Repository layer must
+  convert: input `toDate("2025-01-15")` → `new Date("2025-01-15T00:00:00.000Z")`, output
+  `.toISOString().slice(0, 10)`
+- **Prisma `prisma.config.ts`** requires `DATABASE_URL` at load time — even `prisma generate` needs
+  it (use dummy value if no real DB available)
+- **Prisma P2025 error** — thrown on update/delete of non-existent record. Catch and return
+  `null`/`false` in repository layer
+- **Prisma generated client** is gitignored — CI must run `prisma generate` in prepare step
 - **`@std/dotenv/load`** safely no-ops on Deno Deploy (no `.env` file). Set env vars via the Deploy
   dashboard
 - **`Deno.serve()` port/hostname** are ignored on Deno Deploy — the platform manages networking

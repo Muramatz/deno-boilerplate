@@ -9,24 +9,23 @@
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^1.2",
     "@hono/swagger-ui": "npm:@hono/swagger-ui@^0.5",
     "hono": "npm:hono@^4.11",
-    "drizzle-orm": "npm:drizzle-orm@^0.45",
-    "drizzle-orm/": "npm:/drizzle-orm@^0.45/",
-    "@neondatabase/serverless": "npm:@neondatabase/serverless@^1.0",
-    "postgres": "npm:postgres@^3.4",
+    "@prisma/adapter-pg": "npm:@prisma/adapter-pg@^7.0.0",
+    "@prisma/client": "npm:@prisma/client@^7.0.0",
+    "prisma": "npm:prisma@^7.0.0",
     "date-fns": "npm:date-fns@^4.1",
     "@logtape/logtape": "jsr:@logtape/logtape@^0.10",
-    "@electric-sql/pglite": "npm:@electric-sql/pglite@^0.3",
-    "drizzle-kit": "npm:drizzle-kit@^0.31",
-    "drizzle-kit/api": "npm:drizzle-kit@^0.31/api",
     "@/": "./src/"
   },
   "tasks": {
     "dev": "deno run --watch --allow-net --allow-env --allow-read src/index.ts",
     "check": "deno check src/**/*.ts",
     "test": "deno test --allow-net --allow-env --allow-read --allow-write --allow-sys --allow-ffi src/",
-    "db:generate": "deno run -A npm:drizzle-kit generate",
-    "db:migrate": "deno run -A npm:drizzle-kit migrate",
-    "db:studio": "deno run -A npm:drizzle-kit studio"
+    "db:generate": "deno run -A --env=.env npm:prisma generate",
+    "db:migrate": "deno run -A --env=.env npm:prisma migrate dev",
+    "db:deploy": "deno run -A --env=.env npm:prisma migrate deploy",
+    "db:push": "deno run -A --env=.env npm:prisma db push",
+    "db:push:test": "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_test deno run -A npm:prisma db push",
+    "db:studio": "deno run -A --env=.env npm:prisma studio"
   },
   "compilerOptions": {
     "jsx": "react-jsx"

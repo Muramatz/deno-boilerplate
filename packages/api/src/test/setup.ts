@@ -1,54 +1,39 @@
 import { afterAll, afterEach, beforeAll, describe, it } from '@std/testing/bdd';
 import { expect } from '@std/expect';
-import { type Database, setDb } from '@/db/index.ts';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../../generated/prisma/client.ts';
+import { setPrisma } from '@/db/index.ts';
 
-let pgliteClient: { close(): Promise<void> } | null = null;
-let testDb: Database | null = null;
+let testPrisma: PrismaClient | null = null;
 
-async function initTestDb(): Promise<Database> {
-  const { PGlite } = await import('@electric-sql/pglite');
-  const { drizzle } = await import('drizzle-orm/pglite');
-  const schema = await import('@/db/tables.ts');
-
-  const client = new PGlite();
-  pgliteClient = client;
-  // deno-lint-ignore no-explicit-any
-  const db = drizzle(client as any, { schema }) as unknown as Database;
-
-  const { pushSchema } = await import('drizzle-kit/api');
-  // deno-lint-ignore no-explicit-any
-  const { apply } = await pushSchema(schema, db as any);
-  await apply();
-
-  setDb(db);
-  testDb = db;
-  return db;
+function createTestPrisma(): PrismaClient {
+  const connectionString = Deno.env.get('TEST_DATABASE_URL') ??
+    'postgresql://postgres:postgres@localhost:5432/app_test';
+  const adapter = new PrismaPg({ connectionString });
+  return new PrismaClient({ adapter });
 }
 
-async function cleanupTables() {
-  if (!testDb) return;
-  const schema = await import('@/db/tables.ts');
-  for (const table of Object.values(schema)) {
-    await testDb.delete(table);
-  }
-}
-
-async function closePglite() {
-  if (pgliteClient) await pgliteClient.close();
-  pgliteClient = null;
-  testDb = null;
-}
-
-/** describe直下で呼ぶだけでDB初期化・テーブル掃除・PGLite終了を自動登録 */
+/**
+ * describe 直下で呼ぶだけで DB 接続・テーブル掃除・切断を自動登録。
+ *
+ * 前提条件: テスト用 PostgreSQL が起動済み + スキーマ適用済み
+ *   docker compose up -d
+ *   deno task db:push:test
+ */
 export function useTestDb() {
-  beforeAll(async () => {
-    await initTestDb();
+  beforeAll(() => {
+    testPrisma = createTestPrisma();
+    setPrisma(testPrisma);
   });
   afterEach(async () => {
-    await cleanupTables();
+    if (!testPrisma) return;
+    await testPrisma.$executeRawUnsafe(
+      'TRUNCATE TABLE examples RESTART IDENTITY CASCADE',
+    );
   });
   afterAll(async () => {
-    await closePglite();
+    if (testPrisma) await testPrisma.$disconnect();
+    testPrisma = null;
   });
 }
 

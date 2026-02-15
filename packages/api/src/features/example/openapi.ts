@@ -2,7 +2,7 @@ import { z } from '@hono/zod-openapi';
 
 export const CreateExampleRequestSchema = z
   .object({
-    date: z.string().date().openapi({ description: '日付 (YYYY-MM-DD)', example: '2024-01-15' }),
+    date: z.iso.date().openapi({ description: '日付 (YYYY-MM-DD)', example: '2024-01-15' }),
     field1: z.boolean().default(false).openapi({ description: 'フィールド1' }),
     field2: z.string().openapi({ description: 'フィールド2', example: 'サンプルテキスト' }),
   })

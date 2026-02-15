@@ -36,14 +36,13 @@
 | **ルーティング**              | react-router-dom                      | ^7.13        | SPA ルーティング                                                                                                            |
 | **バックエンド**              | Hono                                  | ^4.11        | 軽量 Web フレームワーク                                                                                                     |
 | **OpenAPI**                   | @hono/zod-openapi                     | ^1.2         | Zodスキーマから自動ドキュメント生成                                                                                         |
-| **ORM**                       | Drizzle ORM                           | ^0.45        | 型安全なDB操作                                                                                                              |
-| **DBドライバ(本番)**          | @neondatabase/serverless              | ^1.0         | Neon HTTP接続（Deno Deploy向けサーバーレスドライバ）                                                                        |
-| **DBドライバ(ローカル)**      | postgres (postgres.js)                | ^3.4         | ローカル開発用PostgreSQL TCP接続                                                                                            |
+| **ORM**                       | Prisma ORM                            | ^7.0         | 型安全なDB操作（Pure TypeScript, driver adapter必須）                                                                       |
+| **DBドライバ**                | @prisma/adapter-pg                    | ^7.0         | PostgreSQL TCP接続（ローカル開発 + Prisma Postgres）                                                                        |
 | **バリデーション**            | Zod                                   | ^4.0         | フロント・バック共有スキーマ（※@hono/zod-openapi v1.xはZod v4必須。v4では`.partial()`でも`.default()`が保持される点に注意） |
 | **ロギング**                  | @logtape/logtape                      | ^0.10        | 構造化ログ（マルチランタイム対応）                                                                                          |
 | **Lint/Format**               | deno lint / deno fmt                  | Deno組み込み | Linter + Formatter                                                                                                          |
 | **テスト**                    | deno test + @std/testing              | Deno組み込み | ユニット・統合テスト                                                                                                        |
-| **テストDB**                  | PGLite (@electric-sql/pglite)         | ^0.3         | インメモリPostgreSQL（WASM）                                                                                                |
+| **テストDB**                  | PostgreSQL (Docker)                   | 18-alpine    | テスト用DB（`app_test`、compose.yml initdbで自動作成）                                                                      |
 | **UIテスト**                  | @testing-library/react                | ^16.3        | Reactコンポーネントテスト                                                                                                   |
 | **モック**                    | MSW (Mock Service Worker)             | ^2.12        | API モック（フロントエンドテスト用）                                                                                        |
 | **日付**                      | date-fns                              | ^4.1         | バックエンド日付操作                                                                                                        |
@@ -200,8 +199,8 @@ coverage/
 *.temp
 .cache/
 
-# Drizzle
-drizzle/meta/
+# Prisma generated client
+packages/api/generated/prisma/
 
 # Docker
 .docker/
@@ -278,8 +277,8 @@ API-First 設計を採用する。各 feature 内に pure Zod スキーマ（`sc
 ```
 [API — Single Source of Truth]
 features/<name>/
-  table.ts      → Drizzle テーブル定義（DB層）
   schema.ts     → Pure Zod スキーマ（共有バリデーション）  ← Web が import
+  (DBスキーマは prisma/schema.prisma で一元管理)
   constants.ts  → ドメイン定数（as const + 型導出）        ← Web が import
   openapi.ts    → OpenAPI メタデータ付き Zod スキーマ（API ドキュメント用）
 
@@ -342,14 +341,13 @@ import { createExampleSchema } from '@<scope>/api/schemas';
 
 ```
 features/<name>/
-├── table.ts       # Drizzle テーブル定義（snake_case → camelCase 型推論）
 ├── schema.ts      # Pure Zod バリデーションスキーマ（Web 共有用）
 ├── constants.ts   # ドメイン定数（as const + 型導出）
 ├── openapi.ts     # OpenAPI メタデータ付き Zod スキーマ（API ドキュメント用）
-├── repository.ts  # データアクセス層（Drizzle CRUD）
+├── repository.ts  # データアクセス層（Prisma Client CRUD）
 ├── service.ts     # ビジネスロジック層
 ├── routes.ts      # HTTP ルートハンドラ（OpenAPIHono）
-├── index.ts       # 公開 API（routes + table のみ）
+├── index.ts       # 公開 API（routes のみ）
 └── __tests__/
 ```
 
@@ -444,24 +442,22 @@ export const EXAMPLE_STATUS_IDS = EXAMPLE_STATUSES.map((s) => s.id);
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^1.2",
     "@hono/swagger-ui": "npm:@hono/swagger-ui@^0.5",
     "hono": "npm:hono@^4.11",
-    "drizzle-orm": "npm:drizzle-orm@^0.45",
-    "drizzle-orm/": "npm:/drizzle-orm@^0.45/",
-    "@neondatabase/serverless": "npm:@neondatabase/serverless@^1.0",
-    "postgres": "npm:postgres@^3.4",
+    "@prisma/adapter-pg": "npm:@prisma/adapter-pg@^7.0.0",
+    "@prisma/client": "npm:@prisma/client@^7.0.0",
+    "prisma": "npm:prisma@^7.0.0",
     "date-fns": "npm:date-fns@^4.1",
     "@logtape/logtape": "jsr:@logtape/logtape@^0.10",
-    "@electric-sql/pglite": "npm:@electric-sql/pglite@^0.3",
-    "drizzle-kit": "npm:drizzle-kit@^0.31",
-    "drizzle-kit/api": "npm:drizzle-kit@^0.31/api",
     "@/": "./src/"
   },
   "tasks": {
     "dev": "deno run --watch --allow-net --allow-env --allow-read src/index.ts",
     "check": "deno check src/**/*.ts",
     "test": "deno test --allow-net --allow-env --allow-read --allow-write --allow-sys --allow-ffi src/",
-    "db:generate": "deno run -A npm:drizzle-kit generate",
-    "db:migrate": "deno run -A npm:drizzle-kit migrate",
-    "db:studio": "deno run -A npm:drizzle-kit studio"
+    "db:generate": "deno run -A --env=.env npm:prisma generate",
+    "db:migrate": "deno run -A --env=.env npm:prisma migrate dev",
+    "db:deploy": "deno run -A --env=.env npm:prisma migrate deploy",
+    "db:push": "deno run -A --env=.env npm:prisma db push",
+    "db:studio": "deno run -A --env=.env npm:prisma studio"
   },
   "compilerOptions": {
     "jsx": "react-jsx"
@@ -477,50 +473,52 @@ export const EXAMPLE_STATUS_IDS = EXAMPLE_STATUSES.map((s) => s.id);
 - `@/` パスエイリアスは `imports` で解決（tsc-alias不要）
 - `pino` → `@logtape/logtape`（Denoネイティブ対応ロガー）
 - Denoの権限モデル: `--allow-net`, `--allow-env`, `--allow-read` を明示
-- テストタスクには追加で `--allow-write --allow-sys --allow-ffi` が必要（`drizzle-kit/api` の
-  `pushSchema` が内部で `os.homedir()` を呼ぶため `--allow-sys` が必須）
-- `drizzle-orm/` のサブパスインポート用エントリも明示
-- `drizzle-kit` を import map に含める（`drizzle.config.ts` の
-  `import { defineConfig } from 'drizzle-kit'` をDenoが解決するため）
-- `@neondatabase/serverless` — Deno Deploy 向け Neon HTTP ドライバ。`drizzle-orm/neon-http`
-  が内部で使用。`DATABASE_URL` に `neon.tech` を含む場合に自動選択される
-- `postgres` は引き続きローカル開発用に保持（Docker PostgreSQL への TCP 接続）
+- テストタスクには追加で `--allow-write --allow-sys --allow-ffi` が必要（Prisma Client
+  が内部で使用）
+- Prisma ORM 7: Pure TypeScript（Rust エンジン不要）、`prisma-client` プロバイダ、driver adapter
+  必須
+- `@prisma/adapter-pg` — PostgreSQL TCP 接続用ドライバアダプタ
+- `prisma.config.ts` で `DATABASE_URL` を設定（`prisma generate` 時もダミー値が必要）
+- 生成クライアントは `packages/api/generated/prisma/` に出力（gitignore 対象）
 
 ### 4.2 ディレクトリ構造
 
 ```
-packages/api/src/
-├── index.ts                          # エントリーポイント（Deno.serve + AppType再エクスポート）
-├── app.ts                            # Honoアプリ定義・ルート集約・ミドルウェアチェーン
-├── db/
-│   ├── index.ts                      # Drizzle DB接続 + setDb()（テスト用DI）
-│   └── tables.ts                     # 全featureテーブルの集約再エクスポート
-├── schemas/
-│   └── index.ts                      # Web向けZodスキーマ・定数の集約再エクスポート
-├── features/
-│   └── <feature-name>/
-│       ├── index.ts                  # 公開API（routesとtableのみ公開）
-│       ├── table.ts                  # Drizzleテーブル定義
-│       ├── schema.ts                 # Pure Zodバリデーションスキーマ（Web共有用）
-│       ├── constants.ts              # ドメイン定数（as const + 型導出）
-│       ├── openapi.ts                # OpenAPIメタデータ付きZodスキーマ
-│       ├── repository.ts             # データアクセス層
-│       ├── service.ts                # ビジネスロジック層
-│       ├── routes.ts                 # Honoルートハンドラ
-│       └── __tests__/
-│           ├── routes.test.ts        # 統合テスト
-│           ├── service.test.ts       # ビジネスロジックテスト
-│           └── repository.test.ts    # データ層テスト
-├── lib/
-│   ├── errors.ts                     # カスタムエラークラス
-│   └── __tests__/
-│       └── errors.test.ts
-├── middleware/
-│   ├── index.ts                      # ミドルウェア再エクスポート
-│   ├── error-handler.ts              # グローバルエラーハンドラ
-│   └── logger.ts                     # LogTapeロギングミドルウェア
-└── test/
-    └── setup.ts                      # テストセットアップ（PGLite + @std/testing）
+packages/api/
+├── prisma/
+│   └── schema.prisma                 # Prisma スキーマ定義（Single Source of Truth）
+├── prisma.config.ts                  # Prisma 7 設定（datasource URL）
+├── generated/prisma/                 # Prisma 生成クライアント（gitignore対象）
+└── src/
+    ├── index.ts                      # エントリーポイント（Deno.serve + AppType再エクスポート）
+    ├── app.ts                        # Honoアプリ定義・ルート集約・ミドルウェアチェーン
+    ├── db/
+    │   └── index.ts                  # Prisma Client接続 + setPrisma()（テスト用DI）
+    ├── schemas/
+    │   └── index.ts                  # Web向けZodスキーマ・定数の集約再エクスポート
+    ├── features/
+    │   └── <feature-name>/
+    │       ├── index.ts              # 公開API（routesのみ公開）
+    │       ├── schema.ts             # Pure Zodバリデーションスキーマ（Web共有用）
+    │       ├── constants.ts          # ドメイン定数（as const + 型導出）
+    │       ├── openapi.ts            # OpenAPIメタデータ付きZodスキーマ
+    │       ├── repository.ts         # データアクセス層（Prisma Client CRUD）
+    │       ├── service.ts            # ビジネスロジック層
+    │       ├── routes.ts             # Honoルートハンドラ
+    │       └── __tests__/
+    │           ├── routes.test.ts    # 統合テスト
+    │           ├── service.test.ts   # ビジネスロジックテスト
+    │           └── repository.test.ts # データ層テスト
+    ├── lib/
+    │   ├── errors.ts                 # カスタムエラークラス
+    │   └── __tests__/
+    │       └── errors.test.ts
+    ├── middleware/
+    │   ├── index.ts                  # ミドルウェア再エクスポート
+    │   ├── error-handler.ts          # グローバルエラーハンドラ
+    │   └── logger.ts                 # LogTapeロギングミドルウェア
+    └── test/
+        └── setup.ts                  # テストセットアップ（PostgreSQL Docker + Prisma）
 ```
 
 ### 4.3 エントリーポイント（src/index.ts）
@@ -711,155 +709,155 @@ export class ValidationError extends AppError {
 ### 4.7 DB接続（src/db/index.ts）
 
 ```typescript
-import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
-import * as schema from './tables.ts';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../../generated/prisma/client.ts';
 
 const connectionString = Deno.env.get('DATABASE_URL') ||
-  'postgresql://postgres:postgres@localhost:5432/<db_name>';
+  'postgresql://postgres:postgres@localhost:5432/app_db';
 
-/**
- * Neon (Deno Deploy) → drizzle-orm/neon-http (HTTP, ステートレス)
- * ローカル開発        → drizzle-orm/postgres-js (TCP)
- */
-const isNeon = connectionString.includes('neon.tech');
+const adapter = new PrismaPg({ connectionString });
+export let prisma = new PrismaClient({ adapter });
 
-export type Database = NeonHttpDatabase<typeof schema>;
-
-let _db: Database;
-
-if (isNeon) {
-  const { drizzle } = await import('drizzle-orm/neon-http');
-  _db = drizzle(connectionString, { schema });
-} else {
-  const { drizzle } = await import('drizzle-orm/postgres-js');
-  _db = drizzle(connectionString, { schema }) as unknown as Database;
-}
-
-export let db: Database = _db;
-
-/** テスト用: DBインスタンスを差し替える（ESM live binding経由で全モジュールに反映） */
-export function setDb(newDb: Database) {
-  db = newDb;
+/** テスト用: Prismaインスタンスを差し替える（ESM live binding経由で全モジュールに反映） */
+export function setPrisma(newPrisma: PrismaClient) {
+  prisma = newPrisma;
 }
 ```
 
 **ポイント:**
 
-- **環境自動判別:** `DATABASE_URL` に `neon.tech` を含む場合は Neon HTTP ドライバ、それ以外は
-  postgres.js（TCP）を使用。Deno の top-level await で動的 import を実現
-- **Neon HTTP ドライバ (`drizzle-orm/neon-http`):** 各クエリが独立した HTTP リクエスト。コネクション
-  プール管理不要でサーバーレス環境（Deno Deploy）に最適
-- **postgres.js:** ローカル開発時は従来通り TCP 接続。Docker Compose の PostgreSQL に直結
-- `export let db` により ESM live binding で `setDb()` の変更が全インポート先に即時反映
-- テスト時は PGLite インスタンスを `setDb()` で注入し、本番コードを一切変更せずにテスト可能
-- `Database` 型は `NeonHttpDatabase<typeof schema>` で統一。ローカル開発・テストでは型キャストで
-  互換性を維持（ランタイム API は同一）
+- **Prisma ORM 7:** Pure TypeScript（Rust エンジン不要）。`@prisma/adapter-pg` で PostgreSQL TCP
+  接続
+- `export let prisma` により ESM live binding で `setPrisma()` の変更が全インポート先に即時反映
+- テスト時は別の PrismaClient インスタンスを `setPrisma()`
+  で注入し、本番コードを一切変更せずにテスト可能
+- Prisma Postgres（本番）もローカル PostgreSQL（開発）も同じ `@prisma/adapter-pg`
+  ドライバアダプタを使用
 
-### 4.8 DBテーブル集約（src/db/tables.ts）
+### 4.8 Prisma スキーマ（prisma/schema.prisma）
 
-```typescript
-// 各featureのtable.tsをここで集約再エクスポート
-// NOTE: drizzle-kit はNode.jsで実行されるため @/ エイリアスを解決できない。相対パスを使用。
-export { examples } from '../features/example/table.ts';
-// export { users } from '../features/user/table.ts';
+```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  runtime  = "deno"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Example {
+  id        String   @id @default(uuid()) @db.Uuid
+  date      DateTime @unique @db.Date
+  field1    Boolean  @default(false)
+  field2    String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("examples")
+}
 ```
 
-### 4.9 Drizzle設定（drizzle.config.ts）
+### 4.9 Prisma設定（prisma.config.ts）
 
 ```typescript
-import { defineConfig } from 'drizzle-kit';
+import { defineConfig, env } from 'prisma/config';
 
 export default defineConfig({
-  schema: './src/db/tables.ts',
-  out: './drizzle',
-  dialect: 'postgresql',
-  dbCredentials: {
-    url: Deno.env.get('DATABASE_URL') || 'postgresql://postgres:postgres@localhost:5432/<db_name>',
-  },
+  schema: 'prisma/schema.prisma',
+  datasource: { url: env('DATABASE_URL') },
 });
 ```
 
 ### 4.10 Feature レイヤーパターン（各ファイルの責務）
 
 ```text
-routes.ts → service.ts → repository.ts → table.ts (DB)
+routes.ts → service.ts → repository.ts → Prisma Client (DB)
      ↓           ↓              ↓
   HTTP入出力   ビジネスロジック   データ操作
-  OpenAPI検証  エラー判定        Drizzle SQL
-              集計・変換         CRUD
+  OpenAPI検証  エラー判定        Prisma CRUD
+              集計・変換         Date↔string変換
 
 openapi.ts ← routes.ts が参照（リクエスト/レスポンスのOpenAPIスキーマ）
 schema.ts  ← service.ts が参照（Pure Zodバリデーション型）
            ← Web が @<scope>/api/schemas 経由で参照
 ```
 
-#### table.ts — Drizzle テーブル定義
-
-```typescript
-import { boolean, date, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
-
-export const examples = pgTable(
-  'examples',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    date: date('date', { mode: 'string' }).notNull(),
-    field1: boolean('field1').default(false).notNull(),
-    field2: text('field2').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [unique('examples_date_unique').on(table.date)],
-);
-
-export type ExampleRecord = typeof examples.$inferSelect;
-export type NewExampleRecord = typeof examples.$inferInsert;
-```
-
 #### repository.ts — データアクセス層
 
 ```typescript
-import { eq } from 'drizzle-orm';
-import { db } from '@/db/index.ts';
-import { type ExampleRecord, examples, type NewExampleRecord } from './table.ts';
+import { prisma } from '@/db/index.ts';
+import type { Example } from '../../../generated/prisma/client.ts';
+
+/** Prisma の Date 出力 → アプリ層で使う string (YYYY-MM-DD) に変換 */
+export type ExampleRecord = Omit<Example, 'date'> & { date: string };
+export type NewExampleRecord = {
+  date: string;
+  field1?: boolean;
+  field2: string;
+};
+
+/** YYYY-MM-DD string → Date (UTC midnight) */
+function toDate(dateStr: string): Date {
+  return new Date(dateStr + 'T00:00:00.000Z');
+}
+
+function toRecord(row: Example): ExampleRecord {
+  return { ...row, date: row.date.toISOString().slice(0, 10) };
+}
 
 export const ExampleRepository = {
   async create(data: NewExampleRecord): Promise<ExampleRecord> {
-    const [record] = await db.insert(examples).values(data).returning();
-    if (!record) throw new Error('Failed to create record');
-    return record;
+    const record = await prisma.example.create({
+      data: { ...data, date: toDate(data.date) },
+    });
+    return toRecord(record);
   },
 
   async findById(id: string): Promise<ExampleRecord | null> {
-    const [record] = await db.select().from(examples).where(eq(examples.id, id));
-    return record ?? null;
+    const record = await prisma.example.findUnique({ where: { id } });
+    return record ? toRecord(record) : null;
   },
 
   async findByDate(date: string): Promise<ExampleRecord | null> {
-    const [record] = await db
-      .select()
-      .from(examples)
-      .where(eq(examples.date, date));
-    return record ?? null;
+    const record = await prisma.example.findUnique({
+      where: { date: toDate(date) },
+    });
+    return record ? toRecord(record) : null;
   },
 
   async update(
     id: string,
     data: Partial<NewExampleRecord>,
   ): Promise<ExampleRecord | null> {
-    const [record] = await db
-      .update(examples)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(examples.id, id))
-      .returning();
-    return record ?? null;
+    try {
+      const record = await prisma.example.update({ where: { id }, data });
+      return toRecord(record);
+    } catch (e: unknown) {
+      if (
+        typeof e === 'object' && e !== null && 'code' in e &&
+        (e as { code: string }).code === 'P2025'
+      ) {
+        return null;
+      }
+      throw e;
+    }
   },
 
   async delete(id: string): Promise<boolean> {
-    const result = await db
-      .delete(examples)
-      .where(eq(examples.id, id))
-      .returning({ id: examples.id });
-    return result.length > 0;
+    try {
+      await prisma.example.delete({ where: { id } });
+      return true;
+    } catch (e: unknown) {
+      if (
+        typeof e === 'object' && e !== null && 'code' in e &&
+        (e as { code: string }).code === 'P2025'
+      ) {
+        return false;
+      }
+      throw e;
+    }
   },
 };
 ```
@@ -868,10 +866,11 @@ export const ExampleRepository = {
 
 - クラスではなくオブジェクトリテラル（インスタンス生成不要）
 - 見つからない場合は `null` を返す（エラーは投げない）
-- `update` 時に `updatedAt` を自動更新
-- **`date` カラムは `mode: 'string'` を使用:** `mode: 'date'` だと postgres.js が JavaScript `Date`
-  をフルタイムスタンプとして送信し、`eq()` 比較が失敗する。`mode: 'string'`（`YYYY-MM-DD`
-  文字列）にして、Zod スキーマ（`z.iso.date()`）でフォーマットを検証する設計が正しい
+- `@updatedAt` により Prisma が `updatedAt` を自動更新
+- **`DateTime @db.Date`** は JS `Date` を返すため、repository 層で `toDate()` / `toRecord()` で
+  `YYYY-MM-DD` 文字列との相互変換を行う。上位層（service, routes, web）は常に文字列で扱う
+- **P2025 エラー:** Prisma が update/delete で存在しないレコードを対象にすると throw する。
+  repository 層で catch して `null` / `false` を返す
 
 #### service.ts — ビジネスロジック層
 
@@ -1659,55 +1658,40 @@ deno fmt --check
 ```typescript
 import { afterAll, afterEach, beforeAll, describe, it } from '@std/testing/bdd';
 import { expect } from '@std/expect';
-import { type Database, setDb } from '@/db/index.ts';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../../generated/prisma/client.ts';
+import { setPrisma } from '@/db/index.ts';
 
-let pgliteClient: { close(): Promise<void> } | null = null;
-let testDb: Database | null = null;
+let testPrisma: PrismaClient | null = null;
 
-async function initTestDb(): Promise<Database> {
-  const { PGlite } = await import('@electric-sql/pglite');
-  const { drizzle } = await import('drizzle-orm/pglite');
-  const schema = await import('@/db/tables.ts');
-
-  const client = new PGlite();
-  pgliteClient = client;
-  // deno-lint-ignore no-explicit-any
-  const db = drizzle(client as any, { schema }) as unknown as Database;
-
-  const { pushSchema } = await import('drizzle-kit/api');
-  // deno-lint-ignore no-explicit-any
-  const { apply } = await pushSchema(schema, db as any);
-  await apply();
-
-  setDb(db);
-  testDb = db;
-  return db;
+function createTestPrisma(): PrismaClient {
+  const connectionString = Deno.env.get('TEST_DATABASE_URL') ??
+    'postgresql://postgres:postgres@localhost:5432/app_test';
+  const adapter = new PrismaPg({ connectionString });
+  return new PrismaClient({ adapter });
 }
 
-async function cleanupTables() {
-  if (!testDb) return;
-  const schema = await import('@/db/tables.ts');
-  for (const table of Object.values(schema)) {
-    await testDb.delete(table);
-  }
-}
-
-async function closePglite() {
-  if (pgliteClient) await pgliteClient.close();
-  pgliteClient = null;
-  testDb = null;
-}
-
-/** describe直下で呼ぶだけでDB初期化・テーブル掃除・PGLite終了を自動登録 */
+/**
+ * describe 直下で呼ぶだけで DB 接続・テーブル掃除・切断を自動登録。
+ *
+ * 前提条件: テスト用 PostgreSQL が起動済み + スキーマ適用済み
+ *   docker compose up -d
+ *   deno task db:push:test
+ */
 export function useTestDb() {
-  beforeAll(async () => {
-    await initTestDb();
+  beforeAll(() => {
+    testPrisma = createTestPrisma();
+    setPrisma(testPrisma);
   });
   afterEach(async () => {
-    await cleanupTables();
+    if (!testPrisma) return;
+    await testPrisma.$executeRawUnsafe(
+      'TRUNCATE TABLE examples RESTART IDENTITY CASCADE',
+    );
   });
   afterAll(async () => {
-    await closePglite();
+    if (testPrisma) await testPrisma.$disconnect();
+    testPrisma = null;
   });
 }
 
@@ -1716,11 +1700,12 @@ export { describe, expect, it };
 
 **Vitest版からの変更点:**
 
-- `vitest` の `vi.mock` → `setDb()` による ESM live binding でのDB差し替え
+- `vitest` の `vi.mock` → `setPrisma()` による ESM live binding でのDB差し替え
 - `@std/testing/bdd` で `describe/it` パターンを維持、`@std/expect` でJest互換のアサーション
-- `useTestDb()` を `describe` 直下で呼ぶだけで `beforeAll`（PGLite初期化 + `setDb`）/
-  `afterEach`（テーブル掃除）/ `afterAll`（PGLite終了）を自動登録
+- `useTestDb()` を `describe` 直下で呼ぶだけで `beforeAll`（Prisma接続 + `setPrisma`）/
+  `afterEach`（TRUNCATE でテーブル掃除）/ `afterAll`（Prisma切断）を自動登録
 - 本番コード（repository.ts等）は一切変更不要。通常のオブジェクトリテラル + ESMインポートのまま
+- **前提条件:** Docker PostgreSQL が起動済み + `prisma db push` でスキーマ適用済みであること
 
 #### テスト3層パターン
 
@@ -1919,12 +1904,11 @@ NG:
 
 ```text
 features/<name>/
-├── index.ts              # 公開: routes, table のみ
-├── table.ts              # Drizzleテーブル定義 + 型推論
+├── index.ts              # 公開: routes のみ
 ├── schema.ts             # Pure Zodバリデーションスキーマ（Web共有用）
 ├── constants.ts          # ドメイン定数（as const + 型導出）
 ├── openapi.ts            # OpenAPIメタデータ付きZodスキーマ
-├── repository.ts         # DB操作（Drizzle query builder）
+├── repository.ts         # DB操作（Prisma Client CRUD）
 ├── service.ts            # ビジネスロジック（Repository呼出 + エラー判定）
 ├── routes.ts             # HTTPハンドラ（OpenAPIHono）
 └── __tests__/
@@ -1985,8 +1969,8 @@ features/<name>/
 | **末尾カンマ**         | ES5                                                                             |
 | **Service/Repository** | オブジェクトリテラル（classは使わない）                                         |
 | **エラー**             | カスタム AppError サブクラスを throw                                            |
-| **DB列名**             | snake_case（Drizzle定義）                                                       |
-| **TS プロパティ**      | camelCase（Drizzle推論）                                                        |
+| **DB列名**             | snake_case（Prisma `@@map` / `@map` で対応）                                    |
+| **TS プロパティ**      | camelCase（Prisma モデルフィールド名）                                          |
 | **パスエイリアス**     | `@/` → `./src/`（import map で解決）                                            |
 | **状態管理**           | サーバー状態=TanStack Query, UI状態=Zustand, フォーム=react-hook-form           |
 | **Zodバージョン**      | Zod v4（`z.iso.date()`, `z.iso.datetime()`, `.partial()` が `.default()` 保持） |
@@ -2011,7 +1995,6 @@ features/<name>/
 ```typescript
 // バレルエクスポート（features/<name>/index.ts）
 export { exampleRoutes } from './routes.ts';
-export { examples } from './table.ts';
 
 // 内部モジュールは index.ts に含めない → 外部からアクセス不可
 // repository.ts, service.ts, schema.ts, constants.ts は非公開
@@ -2037,18 +2020,19 @@ export { examples } from './table.ts';
 ### Phase 2: api パッケージ
 
 - [ ] `packages/api/deno.json` 作成（`exports` にサブパス `"./schemas"` を含める）
-- [ ] `packages/api/drizzle.config.ts` 作成
+- [ ] `packages/api/prisma/schema.prisma` 作成（Prisma スキーマ定義）
+- [ ] `packages/api/prisma.config.ts` 作成（datasource URL 設定）
 - [ ] `packages/api/src/index.ts` 作成（Deno.serve エントリーポイント）
 - [ ] `packages/api/src/app.ts` 作成（Honoアプリ + AppType）
-- [ ] `packages/api/src/db/index.ts` 作成（Drizzle DB接続 + `setDb()` テスト用DI）
-- [ ] `packages/api/src/db/tables.ts` 作成（テーブル集約再エクスポート）
+- [ ] `packages/api/src/db/index.ts` 作成（Prisma Client 接続 + `setPrisma()` テスト用DI）
 - [ ] `packages/api/src/schemas/index.ts` 作成（Web向けZodスキーマ・定数の集約エクスポート）
 - [ ] `packages/api/src/middleware/` 作成（LogTape logger, error-handler）
 - [ ] `packages/api/src/lib/errors.ts` 作成
 - [ ] `packages/api/src/features/health/` 作成（最小feature）
-- [ ] `packages/api/src/test/setup.ts` 作成（PGLite + @std/testing）
-- [ ] サンプルfeatureを1つ作成（table → schema → constants → openapi → repository → service → routes
-      → tests）
+- [ ] `packages/api/src/test/setup.ts` 作成（PostgreSQL Docker + Prisma テストセットアップ）
+- [ ] サンプルfeatureを1つ作成（schema → constants → openapi → repository → service → routes →
+      tests）
+- [ ] `deno task --filter '@app/api' db:generate` — Prisma Client 生成
 
 ### Phase 3: web パッケージ
 
@@ -2148,31 +2132,34 @@ deno task deploy:preview
 
 2つのワークフローを用意:
 
-| ファイル                       | トリガー    | ジョブ                              |
-| ------------------------------ | ----------- | ----------------------------------- |
-| `.github/workflows/ci.yml`     | PR → main   | prepare → lint, fmt, typecheck, test, build |
+| ファイル                       | トリガー    | ジョブ                                        |
+| ------------------------------ | ----------- | --------------------------------------------- |
+| `.github/workflows/ci.yml`     | PR → main   | prepare → lint, fmt, typecheck, test, build   |
 | `.github/workflows/deploy.yml` | push → main | prepare → lint, fmt, typecheck, test → deploy |
 
 **CI ワークフロー** (`ci.yml`) — PR 時に品質チェック:
 
 ```text
-prepare (deno install + upload artifact: deno-deps)
+prepare (deno install + prisma generate + upload artifact: deno-deps)
   ├─ lint-and-format
   ├─ typecheck
-  ├─ test-api
+  ├─ test-api (PostgreSQL service container + prisma db push)
   └─ build-web
 ```
 
 **Deploy ワークフロー** (`deploy.yml`) — main マージ時に CI + デプロイ:
 
 ```text
-prepare (deno install + upload artifact: deno-deps)
+prepare (deno install + prisma generate + upload artifact: deno-deps)
   ├─ lint-and-format ─┐
   ├─ typecheck ───────┼─→ deploy (build:web + Deno Deploy)
   └─ test-api ────────┘
 ```
 
-`deno install` は `prepare` ジョブで1回のみ実行し、`node_modules` を artifact (`deno-deps`) として配布する。各ジョブは artifact をダウンロードして実行する。
+`deno install` + `prisma generate` は `prepare` ジョブで1回のみ実行し、`node_modules` +
+`packages/api/generated` を artifact (`deno-deps`) として配布する。`test-api` ジョブは PostgreSQL
+サービスコンテナ（`app_test` DB）を起動し、`prisma db push`
+でスキーマを適用してからテストを実行する。
 
 ### 11.6 Deno Deploy 初期セットアップ
 
@@ -2189,11 +2176,11 @@ prepare (deno install + upload artifact: deno-deps)
 
 プロジェクトの Settings → Environment Variables で以下を設定:
 
-| 変数           | 値                                                      | 必須 |
-| -------------- | ------------------------------------------------------- | ---- |
-| `DATABASE_URL` | `postgresql://...@....neon.tech/app_db?sslmode=require` | Yes  |
-| `DENO_ENV`     | `production`                                            | Yes  |
-| `JWT_SECRET`   | (ランダム文字列)                                        | Yes  |
+| 変数           | 値                                                 | 必須 |
+| -------------- | -------------------------------------------------- | ---- |
+| `DATABASE_URL` | `prisma+postgres://...@db.prisma.io:5432/postgres` | Yes  |
+| `DENO_ENV`     | `production`                                       | Yes  |
+| `JWT_SECRET`   | (ランダム文字列)                                   | Yes  |
 
 #### 3. GitHub リポジトリ設定
 
