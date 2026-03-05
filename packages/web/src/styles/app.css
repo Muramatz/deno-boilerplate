@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Noto Sans JP', sans-serif;
+  --color-brand-primary: #3a7414;
+  /* カスタムテーマトークンをここに追加 */
+}

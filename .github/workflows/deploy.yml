@@ -1,0 +1,130 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno audit --frozen --lock=deno.lock --level=high
+
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno install
+      - name: Generate Prisma Client
+        run: deno run -A npm:prisma generate
+        working-directory: packages/api
+        env:
+          DATABASE_URL: 'postgresql://localhost:5432/dummy'
+      - name: Upload dependencies artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deno-deps
+          path: |
+            node_modules
+            packages/api/node_modules
+            packages/api/generated
+            packages/web/node_modules
+          if-no-files-found: ignore
+          retention-days: 1
+
+  lint-and-format:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Download dependencies artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deno-deps
+      - run: deno lint
+      - run: deno fmt --check
+
+  typecheck:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Download dependencies artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deno-deps
+      - run: deno task --filter '@app/api' check
+      - run: deno task --filter '@app/web' check
+
+  test-api:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Download dependencies artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deno-deps
+      - name: Push schema to test DB
+        run: deno run -A npm:prisma db push
+        working-directory: packages/api
+        env:
+          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/app_test'
+      - run: deno task --filter '@app/api' test
+        env:
+          TEST_DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/app_test'
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [security-audit, lint-and-format, typecheck, test-api]
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Download dependencies artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deno-deps
+      - run: deno task build:web
+      - name: Deploy to Deno Deploy
+        uses: denoland/deployctl@v1
+        with:
+          project: ${{ vars.DENO_DEPLOY_PROJECT }}
+          entrypoint: 'packages/api/src/index.ts'
+          root: '.'
+          include: 'packages/api,packages/web/dist,deno.json,deno.lock'
+          exclude: 'node_modules,packages/web/src,packages/web/node_modules,packages/api/prisma,.claude,docs'
