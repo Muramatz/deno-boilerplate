@@ -48,7 +48,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Download dependencies artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: deno-deps
       - run: deno lint
@@ -63,7 +63,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Download dependencies artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: deno-deps
       - run: deno task --filter '@app/api' check
@@ -92,7 +92,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Download dependencies artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: deno-deps
       - name: Push schema to test DB
@@ -113,7 +113,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Download dependencies artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: deno-deps
       - run: deno task build:web
