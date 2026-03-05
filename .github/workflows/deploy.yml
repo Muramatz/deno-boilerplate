@@ -26,7 +26,7 @@ jobs:
         run: deno run -A npm:prisma generate
         working-directory: packages/api
         env:
-          DATABASE_URL: "postgresql://unused:unused@localhost:5432/unused"
+          DATABASE_URL: 'postgresql://unused:unused@localhost:5432/unused'
       - name: Upload dependencies artifact
         uses: actions/upload-artifact@v4
         with:
@@ -99,10 +99,10 @@ jobs:
         run: deno run -A npm:prisma db push
         working-directory: packages/api
         env:
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/app_test"
+          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/app_test'
       - run: deno task --filter '@app/api' test
         env:
-          TEST_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/app_test"
+          TEST_DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/app_test'
 
   deploy:
     runs-on: ubuntu-latest
