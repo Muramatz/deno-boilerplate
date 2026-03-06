@@ -246,6 +246,10 @@ Register the route in `app.ts`:
 
 This boilerplate uses a **single deployment model**: the Hono API serves both `/api/*` routes and the Vite SPA build output from a single entrypoint.
 
+Deployment runbook:
+
+- [`DEPLOY.md`](DEPLOY.md)
+
 ### 1. Create Prisma Postgres Database
 
 1. Sign up at [prisma.io/postgres](https://www.prisma.io/postgres)
@@ -260,12 +264,12 @@ This boilerplate uses a **single deployment model**: the Hono API serves both `/
 
 1. Go to [dash.deno.com](https://dash.deno.com/) and create a new project
 2. Link your GitHub repository
-3. Set environment variables in the Deno Deploy dashboard:
+3. Set App Directory to `packages/api` and Entrypoint to `src/index.ts`
+4. Set environment variables in the Deno Deploy dashboard:
 
    | Variable | Value |
    |----------|-------|
    | `DATABASE_URL` | `prisma+postgres://accelerate.prisma-data.net/?api_key=...` |
-   | `DENO_ENV` | `production` |
    | `JWT_SECRET` | Random secure string |
 
 ### 3. Configure GitHub Actions

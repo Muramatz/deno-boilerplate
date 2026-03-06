@@ -21,7 +21,7 @@
     "fmt:check": "deno fmt --check",
     "clean": "rm -rf packages/*/dist packages/*/node_modules",
     "build:web": "deno task --filter '@app/web' build",
-    "deploy:preview": "DENO_ENV=production deno run --allow-net --allow-env --allow-read --allow-sys=hostname packages/api/src/index.ts"
+    "deploy:preview": "DENO_ENV=production STATIC_DIR=./packages/api/dist deno run --allow-net --allow-env --allow-read --allow-sys=hostname packages/api/src/index.ts"
   },
   "fmt": {
     "semiColons": true,

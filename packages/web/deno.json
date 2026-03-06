@@ -30,8 +30,8 @@
   },
   "tasks": {
     "dev": "deno run -A npm:vite",
-    "build": "deno run -A npm:vite build",
-    "preview": "deno run -A npm:vite preview",
+    "build": "deno run -A npm:vite build --outDir ../api/dist --emptyOutDir",
+    "preview": "deno run -A npm:vite preview --outDir ../api/dist",
     "test": "deno test --allow-net --allow-env --allow-read --allow-write src/",
     "check": "deno check src/**/*.ts src/**/*.tsx"
   },

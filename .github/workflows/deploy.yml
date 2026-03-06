@@ -106,11 +106,6 @@ jobs:
           rm -rf "$DEPLOY_SOURCE_DIR"
           mkdir -p "$DEPLOY_SOURCE_DIR/packages"
 
-          # Place SPA build inside app-directory so Deno Deploy runtime can read it.
-          rm -rf packages/api/dist
-          mkdir -p packages/api/dist
-          cp -R packages/web/dist/. packages/api/dist/
-
           # Stage only the API package (including generated Prisma client + dist).
           cp -R packages/api "$DEPLOY_SOURCE_DIR/packages/api"
           rm -rf "$DEPLOY_SOURCE_DIR/packages/api/node_modules"

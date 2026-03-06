@@ -44,16 +44,8 @@ function hasIndexHtml(dir: string): boolean {
 }
 
 function resolveStaticDir(): string {
-  const configured = Deno.env.get('STATIC_DIR');
-  if (configured) return configured;
-
-  const candidates = [
-    './dist', // app-directory (packages/api) as CWD
-    './packages/web/dist', // repo root as CWD
-    '../web/dist', // packages/api as CWD
-  ];
-  const detected = candidates.find(hasIndexHtml);
-  return detected || './dist';
+  // Default is app-local dist. Override with STATIC_DIR for atypical launch CWD.
+  return Deno.env.get('STATIC_DIR') || './dist';
 }
 
 // OpenAPI docs (development only)
