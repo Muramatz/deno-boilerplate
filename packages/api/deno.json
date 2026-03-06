@@ -32,7 +32,7 @@
   },
   "deploy": {
     "runtime": {
-      "type": "dynamic",
+      "mode": "dynamic",
       "entrypoint": "src/index.ts"
     }
   },

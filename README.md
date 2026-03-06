@@ -246,10 +246,6 @@ Register the route in `app.ts`:
 
 This boilerplate uses a **single deployment model**: the Hono API serves both `/api/*` routes and the Vite SPA build output from a single entrypoint.
 
-Deployment runbook:
-
-- [`DEPLOY.md`](DEPLOY.md)
-
 ### 1. Create Prisma Postgres Database
 
 1. Sign up at [prisma.io/postgres](https://www.prisma.io/postgres)
@@ -295,7 +291,36 @@ The CI/CD pipeline will automatically:
 - **Manual run (`workflow_dispatch`)**: Available from GitHub Actions (users with repository write access)
 - Security audit gate: fails only on `critical` advisories (`deno audit --level=critical`)
 
-### 4. Verify Deployment
+### 4. Deploy from Local (Preview / Production)
+
+Run from repository root:
+
+```bash
+make deploy-preview
+```
+
+Production deploy:
+
+```bash
+make deploy-prod
+```
+
+`Makefile` behavior:
+
+- Loads `.env` if present
+- Requires `DENO_DEPLOY_TOKEN` and `DENO_DEPLOY_APP`
+- Uses `DENO_DEPLOY_ORG` only when set
+- Forces `VITE_API_URL` to empty during deploy build (same-origin `/api` in production)
+- Builds web assets into `packages/api/dist`
+- Creates a temporary staging directory and deploys from its parent
+
+Important:
+
+- Running commands from repo root is valid
+- Do not pass `packages/api` as deploy root when App Directory is `packages/api`
+- Pass the parent directory of `packages/api` as deploy root (staged root)
+
+### 5. Verify Deployment
 
 After the first deploy:
 
@@ -305,7 +330,7 @@ https://<project>.deno.dev/api/health    → {"status":"ok"}
 https://<project>.deno.dev/api/swagger   → (disabled in production)
 ```
 
-### Local Production Preview
+### Local App Preview
 
 Test the production build locally before deploying:
 
