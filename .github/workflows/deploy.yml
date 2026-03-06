@@ -117,6 +117,13 @@ jobs:
 
           test -f "$DEPLOY_SOURCE_DIR/packages/api/generated/prisma/client.ts"
           test -f "$DEPLOY_SOURCE_DIR/packages/api/dist/index.html"
+      - name: Preflight check staged deploy source
+        env:
+          DEPLOY_SOURCE_DIR: ${{ runner.temp }}/deploy-source
+        run: |
+          deno check \
+            --config "$DEPLOY_SOURCE_DIR/packages/api/deno.json" \
+            "$DEPLOY_SOURCE_DIR/packages/api/src/index.ts"
       - name: Validate deploy configuration
         env:
           DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}

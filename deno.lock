@@ -2456,6 +2456,7 @@
       "packages/api": {
         "dependencies": [
           "jsr:@logtape/logtape@^2.1.0-dev.501+845fd988",
+          "jsr:@std/dotenv@~0.225.6",
           "npm:@electric-sql/pglite-socket@^0.0.8",
           "npm:@electric-sql/pglite@~0.3.10",
           "npm:@hono/swagger-ui@0.6",
@@ -2463,7 +2464,8 @@
           "npm:@prisma/adapter-pg@^7.4.2",
           "npm:@prisma/client@^7.4.2",
           "npm:date-fns@^4.1.0",
-          "npm:hono@^4.12.5"
+          "npm:hono@^4.12.5",
+          "npm:zod@^4.3.6"
         ]
       },
       "packages/web": {
