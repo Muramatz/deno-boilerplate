@@ -1,0 +1,40 @@
+{
+  "name": "@app/api",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas": "./src/schemas/index.ts"
+  },
+  "imports": {
+    "@hono/zod-openapi": "npm:@hono/zod-openapi@^1.2.2",
+    "@hono/swagger-ui": "npm:@hono/swagger-ui@^0.6.0",
+    "hono": "npm:hono@^4.12.5",
+    "@prisma/adapter-pg": "npm:@prisma/adapter-pg@^7.4.2",
+    "@prisma/client": "npm:@prisma/client@^7.4.2",
+    "@electric-sql/pglite": "npm:@electric-sql/pglite@^0.3.10",
+    "@electric-sql/pglite-socket": "npm:@electric-sql/pglite-socket@^0.0.8",
+    "date-fns": "npm:date-fns@^4.1",
+    "@logtape/logtape": "jsr:@logtape/logtape@^2.1.0-dev.501+845fd988",
+    "@/": "./src/"
+  },
+  "tasks": {
+    "dev": "deno run --watch --allow-net --allow-env --allow-read --allow-sys=hostname src/index.ts",
+    "check": "deno check src/**/*.ts",
+    "test": "deno run --allow-env --allow-net --allow-read --allow-write --allow-run --allow-sys --allow-ffi scripts/test-with-pglite.ts",
+    "db:generate": "deno run -A --allow-scripts=npm:prisma@7.4.2,npm:@prisma/engines@7.4.2 --env=../../.env npm:prisma generate",
+    "db:migrate": "deno run -A --allow-scripts=npm:prisma@7.4.2,npm:@prisma/engines@7.4.2 --env=../../.env npm:prisma migrate dev",
+    "db:deploy": "deno run -A --allow-scripts=npm:prisma@7.4.2,npm:@prisma/engines@7.4.2 --env=../../.env npm:prisma migrate deploy",
+    "db:push": "deno run -A --allow-scripts=npm:prisma@7.4.2,npm:@prisma/engines@7.4.2 --env=../../.env npm:prisma db push",
+    "db:push:test": "DATABASE_URL=${TEST_DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/app_test} deno run -A --allow-scripts=npm:prisma@7.4.2,npm:@prisma/engines@7.4.2 npm:prisma db push",
+    "db:studio": "deno run -A --allow-scripts=npm:prisma@7.4.2,npm:@prisma/engines@7.4.2 --env=../../.env npm:prisma studio"
+  },
+  "deploy": {
+    "runtime": {
+      "type": "dynamic",
+      "entrypoint": "src/index.ts"
+    }
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

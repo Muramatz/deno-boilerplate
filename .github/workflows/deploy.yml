@@ -1,0 +1,165 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno audit --frozen --lock=deno.lock --level=critical
+
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno install
+      - name: Generate Prisma Client
+        run: deno run -A --allow-scripts=npm:prisma@7.4.2,npm:@prisma/engines@7.4.2 npm:prisma generate
+        working-directory: packages/api
+        env:
+          DATABASE_URL: 'postgresql://unused:unused@localhost:5432/unused'
+      - name: Upload dependencies artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deno-deps
+          path: |
+            node_modules
+            packages/api/node_modules
+            packages/api/generated
+            packages/web/node_modules
+          if-no-files-found: ignore
+          retention-days: 1
+
+  lint-and-format:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Download dependencies artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deno-deps
+      - run: deno lint
+      - run: deno fmt --check
+
+  typecheck:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Download dependencies artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deno-deps
+      - run: deno task --filter '@app/api' check
+      - run: deno task --filter '@app/web' check
+
+  test-api:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Download dependencies artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deno-deps
+      - run: deno task --filter '@app/api' test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [security-audit, lint-and-format, typecheck, test-api]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Download dependencies artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deno-deps
+      - run: deno task build:web
+      - name: Prepare deploy source
+        env:
+          DEPLOY_SOURCE_DIR: ${{ runner.temp }}/deploy-source
+        run: |
+          rm -rf "$DEPLOY_SOURCE_DIR"
+          mkdir -p "$DEPLOY_SOURCE_DIR/packages"
+
+          # Place SPA build inside app-directory so Deno Deploy runtime can read it.
+          rm -rf packages/api/dist
+          mkdir -p packages/api/dist
+          cp -R packages/web/dist/. packages/api/dist/
+
+          # Stage only the API package (including generated Prisma client + dist).
+          cp -R packages/api "$DEPLOY_SOURCE_DIR/packages/api"
+          rm -rf "$DEPLOY_SOURCE_DIR/packages/api/node_modules"
+
+          test -f "$DEPLOY_SOURCE_DIR/packages/api/generated/prisma/client.ts"
+          test -f "$DEPLOY_SOURCE_DIR/packages/api/dist/index.html"
+      - name: Validate deploy configuration
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+          DEPLOY_APP: ${{ vars.DENO_DEPLOY_APP }}
+          DEPLOY_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DEPLOY_TOKEN" ]; then
+            echo "::error::Missing GitHub Actions secret: DENO_DEPLOY_TOKEN"
+            exit 1
+          fi
+          if [ -z "$DEPLOY_APP" ]; then
+            echo "::error::Missing GitHub Actions variable: DENO_DEPLOY_APP"
+            exit 1
+          fi
+          if [ -z "$DEPLOY_DATABASE_URL" ]; then
+            echo "::error::Missing GitHub Actions secret: DATABASE_URL"
+            exit 1
+          fi
+      - name: Run production database migrations
+        working-directory: packages/api
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: deno run -A --allow-scripts=npm:prisma@7.4.2,npm:@prisma/engines@7.4.2 npm:prisma migrate deploy
+      - name: Show deploy target
+        env:
+          DEPLOY_APP: ${{ vars.DENO_DEPLOY_APP }}
+          DEPLOY_ORG: ${{ vars.DENO_DEPLOY_ORG }}
+        run: |
+          echo "Deploy app: $DEPLOY_APP"
+          if [ -n "$DEPLOY_ORG" ]; then
+            echo "Deploy org: $DEPLOY_ORG"
+          else
+            echo "Deploy org: <personal>"
+          fi
+      - name: Deploy to Deno Deploy
+        env:
+          DEPLOY_SOURCE_DIR: ${{ runner.temp }}/deploy-source
+          DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+          DEPLOY_APP: ${{ vars.DENO_DEPLOY_APP }}
+          DEPLOY_ORG: ${{ vars.DENO_DEPLOY_ORG }}
+        run: |
+          if [ -n "$DEPLOY_ORG" ]; then
+            deno deploy --config "$DEPLOY_SOURCE_DIR/packages/api/deno.json" --token "$DEPLOY_TOKEN" --org "$DEPLOY_ORG" --app "$DEPLOY_APP" --prod "$DEPLOY_SOURCE_DIR"
+          else
+            deno deploy --config "$DEPLOY_SOURCE_DIR/packages/api/deno.json" --token "$DEPLOY_TOKEN" --app "$DEPLOY_APP" --prod "$DEPLOY_SOURCE_DIR"
+          fi
